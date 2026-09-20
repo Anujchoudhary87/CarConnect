@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" viewBox="0 0 480 360">
+  <rect width="480" height="360" fill="#f5f5f4"/>
+  <g fill="none" stroke="#d6d3d1" stroke-width="10" stroke-linecap="round">
+    <path d="M110 190h260"/>
+    <path d="M120 160l20-50h200l20 50"/>
+    <circle cx="150" cy="210" r="28"/>
+    <circle cx="330" cy="210" r="28"/>
+  </g>
+  <text x="240" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#a8a29e">Car photo jald aa rahi hai</text>
+</svg>
