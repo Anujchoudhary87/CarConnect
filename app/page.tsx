@@ -28,7 +28,16 @@ const STEPS = [
   },
 ];
 
-const POPULAR_BRANDS = ["Maruti Suzuki", "Hyundai", "Tata", "Mahindra", "Honda", "Toyota", "Kia", "MG"];
+const POPULAR_BRANDS = [
+  { name: "Maruti Suzuki", logo: "/brands/maruti-suzuki.svg" },
+  { name: "Hyundai", logo: "/brands/hyundai.svg" },
+  { name: "Tata", logo: "/brands/tata.svg" },
+  { name: "Mahindra", logo: "/brands/mahindra.svg" },
+  { name: "Honda", logo: "/brands/honda.svg" },
+  { name: "Toyota", logo: "/brands/toyota.svg" },
+  { name: "Kia", logo: "/brands/kia.svg" },
+  { name: "MG", logo: "/brands/mg.svg" },
+];
 
 const TRUST_POINTS = [
   {
@@ -120,12 +129,13 @@ export default function Home() {
         <div className="no-scrollbar mt-4 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible">
           {POPULAR_BRANDS.map((b) => (
             <Link
-              key={b}
-              href={`/marketplace?brand=${encodeURIComponent(b)}`}
+              key={b.name}
+              href={`/marketplace?brand=${encodeURIComponent(b.name)}`}
               className="shrink-0 rounded-2xl border border-stone-200 bg-white px-6 py-5 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand hover:shadow-md"
             >
-              <span className="text-2xl">🚗</span>
-              <p className="mt-2 text-sm font-bold text-stone-800">{b}</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={b.logo} alt={`${b.name} logo`} className="mx-auto h-8 w-[110px] object-contain" />
+              <p className="mt-2 text-sm font-bold text-stone-800">{b.name}</p>
               <p className="text-xs text-brand">Browse cars →</p>
             </Link>
           ))}

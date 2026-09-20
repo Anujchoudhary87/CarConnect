@@ -21,7 +21,6 @@ export default async function DealerDashboardPage() {
   const stats = {
     total: vehicles.length,
     active: vehicles.filter((v) => v.status === "active").length,
-    pending: vehicles.filter((v) => v.status === "pending").length,
     sold: vehicles.filter((v) => v.status === "sold").length,
     enquiries: enquires.count ?? 0,
     testDrives: drives.count ?? 0,
@@ -37,7 +36,6 @@ export default async function DealerDashboardPage() {
 
   const countBoxes = [
     { label: "Active Listings", value: stats.active, tone: "text-emerald-600" },
-    { label: "Pending Approval", value: stats.pending, tone: "text-amber-600" },
     { label: "Sold", value: stats.sold, tone: "text-stone-600" },
     { label: "My Offers Sent", value: stats.offers, tone: "text-brand" },
   ];
@@ -49,7 +47,7 @@ export default async function DealerDashboardPage() {
         <ButtonLink href="/dealer/cars/new">+ Add Car</ButtonLink>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {countBoxes.map((c) => (
           <Card key={c.label} className="p-4">
             <p className={`text-2xl font-extrabold ${c.tone}`}>{c.value}</p>
@@ -88,11 +86,6 @@ export default async function DealerDashboardPage() {
         />
       )}
 
-      {stats.pending > 0 && (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-          ℹ️ Naye listings admin approval ke baad customers ko dikhaye jayenge.
-        </p>
-      )}
     </div>
   );
 }

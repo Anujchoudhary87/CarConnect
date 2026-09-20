@@ -1,7 +1,7 @@
 "use client";
 
 import L from "leaflet";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -36,9 +36,14 @@ export default function LeafletMap({
     lat && lng ? [lat, lng] : [20.5937, 78.9629],
   );
 
-  useEffect(() => {
+  const [prevLat, setPrevLat] = useState(lat ?? null);
+  const [prevLng, setPrevLng] = useState(lng ?? null);
+
+  if (lat !== prevLat || lng !== prevLng) {
+    setPrevLat(lat);
+    setPrevLng(lng);
     if (lat && lng) setPosition([lat, lng]);
-  }, [lat, lng]);
+  }
 
   async function fireDrag(newLat: number, newLng: number) {
     if (!onDrag) return;

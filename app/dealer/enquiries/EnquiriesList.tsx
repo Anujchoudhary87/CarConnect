@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { Badge, Button, EmptyState } from "@/components/ui";
 import { telLink, timeAgo, whatsappLink } from "@/lib/format";

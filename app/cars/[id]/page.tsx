@@ -130,7 +130,6 @@ export default async function CarDetailPage({
                 vehicle={car}
                 dealer={dealerRow}
                 isFavorite={isFavorite}
-                onToggleFavorite={() => {}}
               />
             </div>
           </Card>

@@ -156,12 +156,12 @@ async function main() {
     console.log(`✔ Dealer: ${d.dealership_name} (${d.city})`);
   }
 
-  // Cars for each dealer (verified dealer gets active + pending; unverified gets pending).
+  // Cars for each dealer (mostly active; every 5th is sold).
   let carCount = 0;
   for (let i = 0; i < CARS.length; i++) {
     const car = CARS[i];
     const dealer = DEALERS[i % DEALERS.length];
-    const status = !dealer.verified ? "pending" : i % 5 === 4 ? "sold" : i % 4 === 3 ? "pending" : "active";
+    const status = i % 5 === 4 ? "sold" : "active";
     const { data: v, error } = await supabase
       .from("vehicles")
       .insert({

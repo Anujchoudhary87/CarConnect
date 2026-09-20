@@ -20,7 +20,7 @@ export default async function DealerOffersPage() {
     <div>
       <h2 className="mb-1 text-lg font-bold text-stone-900">Customer Car Offers 💰</h2>
       <p className="mb-4 text-sm text-stone-500">
-        'Sell My Car' customers pe aapke bheje offers yahan dikhte hain.
+        &apos;Sell My Car&apos; customers pe aapke bheje offers yahan dikhte hain.
       </p>
       <DealerOffers offers={offers ?? []} />
     </div>

@@ -53,6 +53,7 @@ export function Header() {
     const active = exact ? pathname === href : pathname.startsWith(href);
     return (
       <Link
+        key={href}
         href={href}
         onClick={closeMenus}
         className={cn(

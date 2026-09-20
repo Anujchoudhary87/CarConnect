@@ -203,13 +203,13 @@ export function DealerProfileForm() {
             <div>
               <Label>ID Proof (Aadhaar / PAN)</Label>
               <div className="mt-1.5">
-                <DocUpload folder={`verification/${Date.now()}`} value={idProof} onChange={setIdProof} label="Upload ID proof" />
+                <DocUpload folder="verification/id" value={idProof} onChange={setIdProof} label="Upload ID proof" />
               </div>
             </div>
             <div>
               <Label>Business Proof (optional)</Label>
               <div className="mt-1.5">
-                <DocUpload folder={`verification/${Date.now()}`} value={businessProof} onChange={setBusinessProof} label="Upload business proof" />
+                <DocUpload folder="verification/business" value={businessProof} onChange={setBusinessProof} label="Upload business proof" />
               </div>
             </div>
             <div className="sm:col-span-2">

@@ -15,8 +15,13 @@ export async function GET(request: NextRequest) {
       { headers: { "User-Agent": UA, Referer: "https://carconnect.in" } },
     );
     if (!res.ok) throw new Error(`Nominatim error ${res.status}`);
-    const data = await res.json();
-    const results = (data as any[]).map((r) => ({
+    const data = (await res.json()) as Array<{
+      lat: string;
+      lon: string;
+      display_name: string;
+      address?: { city?: string; town?: string; village?: string; county?: string; state?: string };
+    }>;
+    const results = data.map((r) => ({
       lat: parseFloat(r.lat),
       lng: parseFloat(r.lon),
       label: r.display_name,

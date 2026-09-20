@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { VehicleWithInfo } from "@/lib/types";
 import { ButtonLink, EmptyState, Spinner } from "@/components/ui";
@@ -22,7 +21,10 @@ export function FavoritesList() {
   }, []);
 
   useEffect(() => {
-    load();
+    const t = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(t);
   }, [load]);
 
   function onToggleFavorite(car: VehicleWithInfo, favorite: boolean) {

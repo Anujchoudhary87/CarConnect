@@ -19,8 +19,12 @@ export function useUser() {
     }
 
     if (!supabase) {
-      setLoading(false);
-      setReady(true);
+      Promise.resolve().then(() => {
+        if (active) {
+          setLoading(false);
+          setReady(true);
+        }
+      });
       return;
     }
 

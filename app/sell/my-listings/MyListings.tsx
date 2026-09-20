@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CustomerSellListing } from "@/lib/types";
-import { Badge, Button, Spinner } from "@/components/ui";
+import { Badge, Spinner } from "@/components/ui";
 import { formatKm, formatPriceShort } from "@/lib/format";
 import { EmptyState } from "@/components/ui";
 

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { requireDealer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ButtonLink, EmptyState } from "@/components/ui";

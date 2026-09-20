@@ -22,14 +22,16 @@ export function HomeInventory() {
     setLoading(true);
     setError("");
     try {
-      const base = new URLSearchParams({ sort: "newest" });
-      const params: Array<[string, string]> = [];
+      const params = new URLSearchParams();
       if (location) {
-        params.push(["lat", String(location.lat)], ["lng", String(location.lng)]);
-        if (radius) params.push(["radius_km", radius]);
-        params.push(["sort", "distance"]);
+        params.set("lat", String(location.lat));
+        params.set("lng", String(location.lng));
+        if (radius) params.set("radius_km", radius);
+        params.set("sort", "distance");
+      } else {
+        params.set("sort", "newest");
       }
-      const res = await fetch(`/api/marketplace?${base.toString()}&${new URLSearchParams(params)}`);
+      const res = await fetch(`/api/marketplace?${params.toString()}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not load cars");
       const vehicles = (data.vehicles ?? []) as VehicleWithInfo[];

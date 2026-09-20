@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { CarForm } from "@/components/CarForm";
 import { requireDealer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";

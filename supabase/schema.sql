@@ -1,7 +1,13 @@
 -- =============================================================
 -- CarBazaar (MVP) schema
 -- Used-car platform for local Indian dealers and customers.
--- Run this whole file in the Supabase SQL editor.
+--
+-- IMPORTANT: This file must be run IN ORDER (top to bottom).
+-- The statements are staged so that every table exists before the
+-- functions and policies that reference it, because `language sql`
+-- functions are parsed/validated at creation time and policies are
+-- validated when created. Run the whole file once in the Supabase
+-- SQL editor. It is not idempotent (no IF NOT EXISTS on tables).
 -- =============================================================
 
 -- ---------- Storage bucket for vehicle photos ----------
@@ -18,35 +24,6 @@ create policy "authenticated update vehicle images" on storage.objects
 create policy "authenticated delete vehicle images" on storage.objects
   for delete to authenticated using (bucket_id = 'vehicle-images' and owner = auth.uid());
 
--- ---------- Helper functions (used by RLS policies) ----------
-create or replace function public.is_admin()
-returns boolean
-language sql stable security definer set search_path = public
-as $$
-  select exists (select 1 from public.users where id = auth.uid() and is_admin = true);
-$$;
-
-create or replace function public.is_verified_dealer()
-returns boolean
-language sql stable security definer set search_path = public
-as $$
-  select exists (select 1 from public.dealers where user_id = auth.uid() and verified = true);
-$$;
-
-create or replace function public.is_dealer()
-returns boolean
-language sql stable security definer set search_path = public
-as $$
-  select exists (select 1 from public.users where id = auth.uid() and role = 'dealer');
-$$;
-
-create or replace function public.is_dealer_owner(check_dealer_id uuid)
-returns boolean
-language sql stable security definer set search_path = public
-as $$
-  select exists (select 1 from public.dealers where id = check_dealer_id and user_id = auth.uid());
-$$;
-
 -- ---------- users (profiles, one row per auth user) ----------
 create table public.users (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -60,7 +37,18 @@ create table public.users (
 
 create index users_role_idx on public.users (role);
 
+alter table public.users enable row level security;
+
+create policy "public can read profiles"
+  on public.users for select using (true);
+create policy "user can update own profile"
+  on public.users for update using (auth.uid() = id)
+  with check (auth.uid() = id);
+create policy "user can insert own profile"
+  on public.users for insert with check (auth.uid() = id);
+
 -- Auto-create a profile row when someone signs up.
+-- (Only after public.users exists.)
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql security definer set search_path = public
@@ -82,15 +70,20 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
-alter table public.users enable row level security;
+-- ---------- Helper functions (depend on public.users) ----------
+create or replace function public.is_admin()
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (select 1 from public.users where id = auth.uid() and is_admin = true);
+$$;
 
-create policy "public can read profiles"
-  on public.users for select using (true);
-create policy "user can update own profile"
-  on public.users for update using (auth.uid() = id)
-  with check (auth.uid() = id);
-create policy "user can insert own profile"
-  on public.users for insert with check (auth.uid() = id);
+create or replace function public.is_dealer()
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (select 1 from public.users where id = auth.uid() and role = 'dealer');
+$$;
 
 -- ---------- dealers ----------
 create table public.dealers (
@@ -125,16 +118,32 @@ create policy "public can read dealers"
   on public.dealers for select using (true);
 create policy "dealer can create own profile"
   on public.dealers for insert to authenticated
-  with check (user_id = auth.uid());
+  with check (user_id = auth.uid() and public.is_dealer());
 create policy "dealer can update own profile"
   on public.dealers for update to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
+  using (user_id = auth.uid() and public.is_dealer())
+  with check (user_id = auth.uid() and public.is_dealer());
 create policy "admin can update dealers"
   on public.dealers for update to authenticated
   using (public.is_admin()) with check (public.is_admin());
 create policy "dealer can delete own profile"
   on public.dealers for delete to authenticated
   using (user_id = auth.uid());
+
+-- ---------- Helper functions (depend on public.dealers) ----------
+create or replace function public.is_verified_dealer()
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (select 1 from public.dealers where user_id = auth.uid() and verified = true);
+$$;
+
+create or replace function public.is_dealer_owner(check_dealer_id uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (select 1 from public.dealers where id = check_dealer_id and user_id = auth.uid());
+$$;
 
 -- ---------- dealer_verification ----------
 create table public.dealer_verification (

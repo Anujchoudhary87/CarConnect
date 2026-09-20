@@ -10,12 +10,10 @@ export function ContactBar({
   vehicle,
   dealer,
   isFavorite,
-  onToggleFavorite,
 }: {
   vehicle: Vehicle;
   dealer: Dealer | null;
   isFavorite: boolean;
-  onToggleFavorite: (favorite: boolean) => void;
 }) {
   const router = useRouter();
   const [favoriteState, setFavoriteState] = useState(isFavorite);
@@ -37,7 +35,7 @@ export function ContactBar({
       body: JSON.stringify(body),
     });
     if (res.status === 401) {
-      window.location.href = `/auth/login?next=/cars/${vehicle.id}`;
+      router.push(`/auth/login?next=/cars/${vehicle.id}`);
       return null;
     }
     const data = await res.json();
@@ -88,7 +86,6 @@ export function ContactBar({
     const data = await post("/api/favorites", { vehicle_id: vehicle.id });
     if (data) {
       setFavoriteState(data.favorite);
-      onToggleFavorite(data.favorite);
     }
   }
 

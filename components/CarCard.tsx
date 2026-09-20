@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { VehicleWithInfo } from "@/lib/types";
 import { formatKm, formatPriceShort, ownerLabel } from "@/lib/format";
@@ -14,6 +15,7 @@ export function CarCard({
   onToggleFavorite?: (car: VehicleWithInfo, favorite: boolean) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
   const image = car.vehicle_images?.[0]?.url;
 
   // Favorite toggle (top-right of image).
@@ -31,7 +33,7 @@ export function CarCard({
         body: JSON.stringify({ vehicle_id: car.id }),
       });
       if (res.status === 401) {
-        window.location.href = `/auth/login?next=/cars/${car.id}`;
+        router.push(`/auth/login?next=/cars/${car.id}`);
         return;
       }
       const data = await res.json();

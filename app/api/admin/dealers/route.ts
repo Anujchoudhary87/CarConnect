@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   const admin = await requireAdminApi();
   if (!admin) return Response.json({ error: "Not authenticated" }, { status: 401 });
   const supabase = admin.supabase;

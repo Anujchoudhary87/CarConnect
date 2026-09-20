@@ -65,7 +65,7 @@ export function AdminPanel() {
   const [vehicles, setVehicles] = useState<VehicleRow[]>([]);
   const [sell, setSell] = useState<SellListingRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [vehStatus, setVehStatus] = useState("pending");
+  const [vehStatus, setVehStatus] = useState("active");
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
 
@@ -88,7 +88,10 @@ export function AdminPanel() {
   }, [vehStatus]);
 
   useEffect(() => {
-    load();
+    const t = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => clearTimeout(t);
   }, [load]);
 
   async function act(url: string, body: object, success: string) {
@@ -114,7 +117,7 @@ export function AdminPanel() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "dealers", label: `Dealer Verification (${summary?.pendingDealers ?? 0})` },
-    { id: "vehicles", label: "Vehicle Approval" },
+    { id: "vehicles", label: "Vehicles" },
     { id: "sell", label: "Sell Listings" },
   ];
 
@@ -146,7 +149,6 @@ export function AdminPanel() {
             { label: "Dealers", value: summary.dealers },
             { label: "Pending Verifications", value: summary.pendingDealers },
             { label: "Total Cars", value: summary.vehicles },
-            { label: "Pending Approval", value: summary.pendingVehicles },
             { label: "Active Cars", value: summary.activeVehicles },
             { label: "Sell Listings", value: summary.sellListings },
             { label: "Open Sell Cars", value: summary.openSellListings },
@@ -207,13 +209,13 @@ export function AdminPanel() {
       ) : tab === "vehicles" ? (
         <div className="space-y-3">
           <div className="flex gap-2">
-            {["pending", "active", "rejected", "sold"].map((s) => (
+            {["active", "pending", "rejected", "sold"].map((s) => (
               <button
                 key={s}
                 onClick={() => setVehStatus(s)}
                 className={`rounded-full px-3 py-1 text-sm font-semibold transition-colors ${vehStatus === s ? "bg-brand text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"}`}
               >
-                {s.slice(0, 1).toUpperCase() + s.slice(1)} ({s === "pending" ? summary?.pendingVehicles ?? 0 : ""})
+                {s.slice(0, 1).toUpperCase() + s.slice(1)}
               </button>
             ))}
           </div>
@@ -232,16 +234,6 @@ export function AdminPanel() {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {v.status === "pending" && (
-                  <>
-                    <Button size="sm" variant="success" loading={busy === `a${v.id}`} onClick={() => act(`/api/admin/vehicles/${v.id}`, { action: "active" }, "Approved — car ab marketplace pe hai")}>
-                      ✓ Approve
-                    </Button>
-                    <Button size="sm" variant="outline" loading={busy === `r${v.id}`} onClick={() => act(`/api/admin/vehicles/${v.id}`, { action: "rejected" }, "Rejected")}>
-                      ✕ Reject
-                    </Button>
-                  </>
-                )}
                 <Button size="sm" variant="ghost" loading={busy === `d${v.id}`} onClick={() => act(`/api/admin/vehicles/${v.id}`, { action: "delete" }, "Car deleted")}>
                   🗑 Delete
                 </Button>

@@ -41,8 +41,27 @@ export async function GET(request: NextRequest) {
   }
 
   if (f.q) {
-    const q = `%${f.q.trim().toLowerCase()}%`;
-    query = query.or(`brand.ilike.${q},model.ilike.${q},variant.ilike.${q},city.ilike.${q}`);
+    // PostgREST's .or() treats `,` and `(`/`)` as condition syntax, so a raw
+    // search like "Swift, Jaipur" or "Swift (2nd gen)" would otherwise 500.
+    // Split into safe tokens and match any of them across the fields.
+    const tokens = f.q
+      .toLowerCase()
+      .replace(/[,()]/g, " ")
+      .split(/\s+/)
+      .map((t) => t.trim().replace(/^%+|%+$/g, ""))
+      .filter((t) => t.length > 0)
+      .slice(0, 4);
+    if (tokens.length > 0) {
+      const conds = tokens
+        .flatMap((t) => [
+          `brand.ilike.%${t}%`,
+          `model.ilike.%${t}%`,
+          `variant.ilike.%${t}%`,
+          `city.ilike.%${t}%`,
+        ])
+        .join(",");
+      query = query.or(conds);
+    }
   }
   const excludeDealerId = sp.get("exclude_dealer_id");
   if (excludeDealerId) query = query.neq("dealer_id", excludeDealerId);

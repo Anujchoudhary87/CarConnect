@@ -48,8 +48,15 @@ function parseReq(q: string): Parsed {
 
   const vs = q.split(/\s+vs\.?\s+/i);
   if (vs.length >= 2 && vs.every((x) => trimForSearch(x).length > 0)) {
-    out.compare = vs.map((x) => trimForSearch(x)).slice(0, 3);
-    return out;
+    out.compare = vs
+      .map((x) =>
+        trimForSearch(x)
+          .replace(/^(compare|show|difference|between|me)\b\s*/i, "")
+          .trim(),
+      )
+      .filter((x) => x.length > 0)
+      .slice(0, 3);
+    if (out.compare.length >= 2) return out;
   }
 
   const crore = s.match(
@@ -235,7 +242,7 @@ export function AiAssistant() {
   }
 
   return (
-    <section id="ai-assistant" className="mx-auto -mt-10 max-w-4xl px-4 sm:-mt-14">
+    <section id="ai-assistant" className="mx-auto max-w-4xl px-4">
       <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-xl shadow-stone-900/5">
         <div className="border-b border-stone-100 bg-gradient-to-r from-red-50 to-stone-50 px-5 py-4 sm:px-7">
           <p className="text-xs font-bold uppercase tracking-wide text-brand">✨ AI Assistant for Cars</p>

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         description: body.description ?? "",
         lat: body.lat ?? null,
         lng: body.lng ?? null,
-        status: "pending",
+        status: "active",
       },
     ])
     .select("id")

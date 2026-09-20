@@ -52,11 +52,11 @@ Creates an admin, a customer, two dealers, cars, and a sell listing + offer.
 - **Apni Gaadi Becho (Sell)** — customers list their car; verified dealers view it and submit offers; the owner accepts/rejects/marks sold.
 - **Dealer Panel** — inventory (Add/Edit/Sold/Relist/Delete), Customer Enquiries & Test Drive inbox, Dealer Network (browse other dealers' cars + send interest + inbox), My Offers on customer cars, Dealer Profile.
 - **Dealer Onboarding** — profile + verification docs; admin approves; verified dealers unlock Sell-My-Car listings and get the badge.
-- **Admin Panel** — overview counts, verify/unverify dealers (with proof links), approve/reject/delete car listings, manage sell listings.
+- **Admin Panel** — overview counts, verify/unverify dealers (with proof links), moderate/delete car listings, manage sell listings.
 
 ## Workflow notes
 
-- New dealer cars list with `status = 'pending'` and only appear publicly after the admin approves them.
+- New dealer cars are inserted with `status = 'active'` and appear in the marketplace immediately per the public visibility/location rules.
 - `proxy.ts` (Next 16 middleware) guards `/dealer`, `/admin`, `/favorites`, `/sell`, `/account`.
 - All writes go through Route Handlers under `/api/*`; reads use the Supabase server client + RLS.
 - Supabase needs an email confirmation setting for production signups.

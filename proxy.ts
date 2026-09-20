@@ -14,5 +14,6 @@ export const config = {
     "/account/:path*",
     "/become-dealer",
     "/auth/:path*",
+    "/api/:path*",
   ],
 };
