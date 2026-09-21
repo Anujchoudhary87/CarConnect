@@ -1,18 +1,43 @@
 import { NextRequest } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
+import { authUserEmails } from "@/lib/supabase/service";
 
 export async function GET() {
   const admin = await requireAdminApi();
   if (!admin) return Response.json({ error: "Not authenticated" }, { status: 401 });
   const supabase = admin.supabase;
 
-  const { data } = await supabase
-    .from("dealers")
-    .select("*, verification:dealer_verification(*)")
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [{ data: dealers }, { data: vehicles }, emailMap] = await Promise.all([
+    supabase
+      .from("dealers")
+      .select("*, verification:dealer_verification(*)")
+      .order("created_at", { ascending: false })
+      .limit(200),
+    supabase.from("vehicles").select("dealer_id, status"),
+    authUserEmails(),
+  ]);
 
-  return Response.json({ dealers: data ?? [] });
+  const counts = new Map<string, { total: number; active: number; sold: number }>();
+  for (const v of vehicles ?? []) {
+    const c = counts.get(v.dealer_id as string) ?? { total: 0, active: 0, sold: 0 };
+    c.total += 1;
+    if (v.status === "active") c.active += 1;
+    if (v.status === "sold") c.sold += 1;
+    counts.set(v.dealer_id as string, c);
+  }
+
+  const rows = (dealers ?? []).map((d) => {
+    const c = counts.get(d.id as string) ?? { total: 0, active: 0, sold: 0 };
+    return {
+      ...d,
+      email: d.email || emailMap.get(d.user_id as string) || "",
+      total_cars: c.total,
+      active_cars: c.active,
+      sold_cars: c.sold,
+    };
+  });
+
+  return Response.json({ dealers: rows });
 }
 
 export async function PUT(request: NextRequest) {

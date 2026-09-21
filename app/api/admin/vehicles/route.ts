@@ -6,13 +6,12 @@ export async function GET(request: NextRequest) {
   if (!admin) return Response.json({ error: "Not authenticated" }, { status: 401 });
   const supabase = admin.supabase;
 
-  const status = request.nextUrl.searchParams.get("status") || "active";
-  const { data } = await supabase
+  const status = request.nextUrl.searchParams.get("status") || "all";
+  let query = supabase
     .from("vehicles")
-    .select("*, dealer:dealers(dealership_name, verified, city), vehicle_images(*)")
-    .eq("status", status)
-    .order("created_at", { ascending: false })
-    .limit(100);
+    .select("*, dealer:dealers(dealership_name, verified, city), vehicle_images(*)");
+  if (status !== "all") query = query.eq("status", status);
+  const { data } = await query.order("created_at", { ascending: false }).limit(200);
 
   return Response.json({ vehicles: data ?? [] });
 }

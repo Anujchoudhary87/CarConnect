@@ -116,7 +116,7 @@ export function SellListingDetail({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {listing.photos.map((url) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={url} src={url} alt="listing" className="aspect-video w-full rounded-lg object-cover" />
+            <img key={url} src={url} alt="listing" className="aspect-video w-full rounded-lg bg-stone-100 object-contain" />
           ))}
         </div>
       )}

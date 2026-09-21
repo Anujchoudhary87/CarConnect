@@ -54,7 +54,7 @@ export function CarCard({
           <img
             src={image}
             alt={`${car.brand} ${car.model}`}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-full w-full object-contain"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-4xl">🚗</div>

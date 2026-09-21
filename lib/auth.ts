@@ -50,7 +50,7 @@ export async function requireDealer() {
 export async function requireAdmin() {
   const user = await requireAuth();
   const profile = await getProfile();
-  if (!profile?.is_admin) redirect("/");
+  if (!profile?.is_admin) return null;
   return { user, profile };
 }
 

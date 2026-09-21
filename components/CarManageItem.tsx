@@ -53,7 +53,7 @@ export function CarManageItem({
         <img
           src={images[0] ?? "/car-placeholder.svg"}
           alt={vehicle.brand}
-          className="h-24 w-full rounded-lg object-cover sm:w-36"
+          className="h-24 w-full rounded-lg bg-stone-100 object-contain sm:w-36"
         />
       </Link>
       <div className="min-w-0 flex-1">

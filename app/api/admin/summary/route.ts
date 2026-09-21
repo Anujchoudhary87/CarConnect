@@ -14,25 +14,38 @@ export async function GET() {
 
   const [
     users,
+    customers,
     dealers,
+    verifiedDealers,
     pendingDealers,
     vehicles,
-    pendingVehicles,
-    activeVehicles,
     sellListings,
-    openSellListings,
+    dealerOffers,
     enquiries,
+    testDrives,
   ] = await Promise.all([
     count("users"),
+    count("users", { eq: ["role", "customer"] }),
     count("dealers"),
+    count("dealers", { eq: ["verified", "true"] }),
     count("dealers", { eq: ["verified", "false"] }),
     count("vehicles"),
-    count("vehicles", { eq: ["status", "pending"] }),
-    count("vehicles", { eq: ["status", "active"] }),
     count("customer_sell_listings"),
-    count("customer_sell_listings", { eq: ["status", "open"] }),
+    count("dealer_offers"),
     count("enquiries"),
+    count("test_drive_requests"),
   ]);
 
-  return Response.json({ users, dealers, pendingDealers, vehicles, pendingVehicles, activeVehicles, sellListings, openSellListings, enquiries });
+  return Response.json({
+    users,
+    customers,
+    dealers,
+    verifiedDealers,
+    pendingDealers,
+    vehicles,
+    sellListings,
+    dealerOffers,
+    enquiries,
+    testDrives,
+  });
 }

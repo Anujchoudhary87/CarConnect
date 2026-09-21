@@ -9,6 +9,7 @@ const links = [
   { href: "/dealer/cars/new", label: "+ Add Car", emoji: "🚗", activePrefix: "/dealer/cars/new" },
   { href: "/dealer/cars", label: "My Cars", emoji: "🗂️", activePrefix: "/dealer/cars" },
   { href: "/dealer/enquiries", label: "Customer Enquiries", emoji: "💬", activePrefix: "/dealer/enquiries" },
+  { href: "/dealer/sell-requests", label: "Customer Sell Requests", emoji: "💰", activePrefix: "/dealer/sell-requests" },
   { href: "/dealer/offers", label: "My Offers", emoji: "💰", activePrefix: "/dealer/offers" },
   { href: "/dealer/profile", label: "My Profile", emoji: "🏪", activePrefix: "/dealer/profile" },
 ];

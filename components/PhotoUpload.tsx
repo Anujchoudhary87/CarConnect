@@ -18,9 +18,9 @@ export async function uploadFile(file: File, folder: string) {
 
 function PhotoPreview({ url, onRemove }: { url: string; onRemove: () => void }) {
   return (
-    <div className="relative aspect-video overflow-hidden rounded-lg border border-stone-200">
+    <div className="relative aspect-video overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="Uploaded photo" className="h-full w-full object-cover" />
+      <img src={url} alt="Uploaded photo" className="h-full w-full object-contain" />
       <button
         type="button"
         onClick={onRemove}
