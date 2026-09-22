@@ -7,11 +7,12 @@ import { cn } from "@/components/ui";
 const links = [
   { href: "/dealer", label: "Dashboard", emoji: "📊", exact: true },
   { href: "/dealer/cars/new", label: "+ Add Car", emoji: "🚗", activePrefix: "/dealer/cars/new" },
-  { href: "/dealer/cars", label: "My Cars", emoji: "🗂️", activePrefix: "/dealer/cars" },
+  { href: "/dealer/cars", label: "Meri Gaadiyaan", emoji: "🗂️", activePrefix: "/dealer/cars" },
   { href: "/dealer/enquiries", label: "Customer Enquiries", emoji: "💬", activePrefix: "/dealer/enquiries" },
   { href: "/dealer/sell-requests", label: "Customer Sell Requests", emoji: "💰", activePrefix: "/dealer/sell-requests" },
-  { href: "/dealer/offers", label: "My Offers", emoji: "💰", activePrefix: "/dealer/offers" },
-  { href: "/dealer/profile", label: "My Profile", emoji: "🏪", activePrefix: "/dealer/profile" },
+  { href: "/dealer/offers", label: "Mere Offers", emoji: "💰", activePrefix: "/dealer/offers" },
+  { href: "/dealer/demand", label: "Customer Demand", emoji: "🔥", activePrefix: "/dealer/demand" },
+  { href: "/dealer/profile", label: "Mera Profile", emoji: "🏪", activePrefix: "/dealer/profile" },
 ];
 
 export function DealerNav() {

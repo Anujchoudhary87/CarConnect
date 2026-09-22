@@ -7,14 +7,15 @@ import { Button } from "@/components/ui";
 import { formatPriceShort } from "@/lib/format";
 import { distanceLabel } from "@/lib/geo";
 import { getStoredLocation } from "@/components/location-store";
+import { parseBrandModel, recordDemand } from "@/lib/demand";
 
 const SUGGESTIONS = [
-  "Best car for my budget",
-  "Family car under ₹10 lakh",
-  "Low maintenance car",
-  "Petrol car for city use",
-  "Best SUV under ₹15 lakh",
-  "Compare Creta vs Seltos",
+  "Mere budget ki best car",
+  "₹10 lakh tak family car",
+  "Kam maintenance wali car",
+  "City use ke liye petrol car",
+  "₹15 lakh tak best SUV",
+  "Creta vs Seltos compare",
 ];
 
 const PLACEHOLDER =
@@ -99,6 +100,7 @@ function trimForSearch(x: string) {
 interface Scored extends VehicleWithInfo {
   score: number;
   reasons: string[];
+  missed?: string[];
 }
 
 function scoreVehicle(v: VehicleWithInfo, p: Parsed): Scored {
@@ -107,17 +109,17 @@ function scoreVehicle(v: VehicleWithInfo, p: Parsed): Scored {
 
   if (p.maxPrice != null) {
     if (v.price <= p.maxPrice) {
-      reasons.push(`Fits your budget of ${formatPriceShort(v.price)} or less`);
+      reasons.push(`Aapke ${formatPriceShort(v.price)} ya usse kam budget mein fit hai`);
       score += 3;
     } else {
-      reasons.push(`Priced ${formatPriceShort(v.price)} — above your budget`);
+      reasons.push(`${formatPriceShort(v.price)} — budget se upar`);
       score -= 3;
     }
   }
 
   if (p.fuel) {
     if (v.fuel.toLowerCase() === p.fuel.toLowerCase()) {
-      reasons.push(`${v.fuel} fuel (matches your choice)`);
+      reasons.push(`${v.fuel} fuel (aapki pasand se match)`);
       score += 2;
     } else {
       score -= 1;
@@ -135,7 +137,7 @@ function scoreVehicle(v: VehicleWithInfo, p: Parsed): Scored {
 
   if (p.minYear) {
     if (v.year >= p.minYear) {
-      reasons.push(`${v.year} model year (${p.minYear} or newer)`);
+      reasons.push(`${v.year} model year (${p.minYear} ya naya)`);
       score += 2;
     } else {
       score -= 2;
@@ -143,7 +145,7 @@ function scoreVehicle(v: VehicleWithInfo, p: Parsed): Scored {
   }
 
   if (p.wantsNear && v.distance_km != null) {
-    reasons.push(`${distanceLabel(v.distance_km)} from you`);
+    reasons.push(`${distanceLabel(v.distance_km)} door aapse`);
   }
 
   return { ...v, score, reasons };
@@ -153,15 +155,115 @@ function describeHelp(p: Parsed) {
   const notes: string[] = [];
   if (p.seats != null) {
     notes.push(
-      "Seating capacity is not stored in the inventory yet — verify seats directly with the dealer before finalising.",
+      "Kar seating inventory mein abhi stored nahi hai — finalize karne se pehle seats dealer se confirm karo.",
     );
   }
   if (!p.maxPrice && !p.fuel && p.minYear == null && !p.transmission) {
     notes.push(
-      "Tell me your budget, fuel, year and location for sharper suggestions. Results below are the newest listings on Car Connect.",
+      "Budget, fuel, year aur location batao to behtar suggestions milengi. Neeche Car Connect ki newest listings hain.",
     );
   }
   return notes;
+}
+
+interface HardSpec {
+  brand: string;
+  model: string;
+  fuel: string;
+  transmission: string;
+  minYear: number | null;
+  maxPrice: number | null;
+}
+
+function specCountOf(s: HardSpec): number {
+  return (
+    (s.brand ? 1 : 0) +
+    (s.model ? 1 : 0) +
+    (s.fuel ? 1 : 0) +
+    (s.transmission ? 1 : 0) +
+    (s.minYear != null ? 1 : 0) +
+    (s.maxPrice != null ? 1 : 0)
+  );
+}
+
+function matchedCount(s: HardSpec, v: VehicleWithInfo): number {
+  let n = 0;
+  if (s.brand && v.brand.toLowerCase() === s.brand.toLowerCase()) n += 1;
+  if (s.model && v.model.toLowerCase().includes(s.model.toLowerCase())) n += 1;
+  if (s.fuel && v.fuel.toLowerCase() === s.fuel.toLowerCase()) n += 1;
+  if (s.transmission && v.transmission.toLowerCase() === s.transmission.toLowerCase()) n += 1;
+  if (s.minYear != null && v.year >= s.minYear) n += 1;
+  if (s.maxPrice != null && v.price <= s.maxPrice) n += 1;
+  return n;
+}
+
+function isCloseMatch(s: HardSpec, v: VehicleWithInfo): boolean {
+  const total = specCountOf(s);
+  if (total < 2) return false;
+  const sat = matchedCount(s, v);
+  if (sat === total) return false; // exact match, handled separately
+  if (sat >= Math.max(2, total - 1)) return true;
+  if (
+    s.brand &&
+    s.model &&
+    v.brand.toLowerCase() === s.brand.toLowerCase() &&
+    v.model.toLowerCase().includes(s.model.toLowerCase())
+  ) {
+    return sat >= 2;
+  }
+  return false;
+}
+
+function closeRank(s: HardSpec, v: VehicleWithInfo): number {
+  let rank = matchedCount(s, v);
+  if (
+    s.brand &&
+    s.model &&
+    v.brand.toLowerCase() === s.brand.toLowerCase() &&
+    v.model.toLowerCase().includes(s.model.toLowerCase())
+  ) {
+    rank += 1;
+  }
+  return rank;
+}
+
+function lakhLabel(value: number | null): string {
+  if (value == null) return "";
+  const lakh = value / 100000;
+  return Number.isInteger(lakh) ? String(lakh) : lakh.toFixed(1);
+}
+
+function requirementSummary(p: Parsed, brand: string, model: string): string {
+  const parts: string[] = [];
+  const name = `${brand} ${model}`.trim();
+  if (name) parts.push(name);
+  if (p.fuel) parts.push(p.fuel);
+  if (p.transmission) parts.push(p.transmission);
+  if (p.minYear) parts.push(`${p.minYear}+`);
+  if (p.maxPrice != null) parts.push(`₹${lakhLabel(p.maxPrice)}L tak`);
+  return parts.join(" • ");
+}
+
+function missingCriteria(p: Parsed, brand: string, model: string, v: VehicleWithInfo): string[] {
+  const out: string[] = [];
+  if (brand && v.brand.toLowerCase() !== brand.toLowerCase()) {
+    out.push(`Brand requirement match nahi ho rahi: aapne ${brand} maanga tha.`);
+  } else if (model && !v.model.toLowerCase().includes(model.toLowerCase())) {
+    out.push(`Model requirement match nahi ho rahi: aapne ${model} bola tha.`);
+  }
+  if (p.fuel && v.fuel.toLowerCase() !== p.fuel.toLowerCase()) {
+    out.push(`Fuel requirement match nahi ho rahi: aapne ${p.fuel} bola tha.`);
+  }
+  if (p.transmission && v.transmission.toLowerCase() !== p.transmission.toLowerCase()) {
+    out.push(`Transmission requirement match nahi ho rahi: aapne ${p.transmission} bola tha.`);
+  }
+  if (p.minYear && v.year < p.minYear) {
+    out.push(`Year requirement match nahi ho rahi: aapne ${p.minYear}+ bola tha.`);
+  }
+  if (p.maxPrice != null && v.price > p.maxPrice) {
+    out.push(`Price requirement match nahi ho rahi: aapke ₹${lakhLabel(p.maxPrice)}L tak budget tha.`);
+  }
+  return out;
 }
 
 export function AiAssistant() {
@@ -173,6 +275,13 @@ export function AiAssistant() {
   const [results, setResults] = useState<Scored[]>([]);
   const [compareName, setCompareName] = useState<string | null>(null);
   const [favState, setFavState] = useState<Record<string, boolean>>({});
+  const [mode, setMode] = useState<"match" | "close" | "none" | "general" | null>(null);
+  const [alternatives, setAlternatives] = useState<Scored[]>([]);
+  const [showAlternatives, setShowAlternatives] = useState(false);
+  const [requirement, setRequirement] = useState("");
+  const [recordId, setRecordId] = useState<string | null>(null);
+  const [optInStatus, setOptInStatus] = useState<"ask" | "on" | "off">("ask");
+  const [optInMsg, setOptInMsg] = useState("");
 
   async function run(q: string) {
     if (!q.trim()) return;
@@ -183,6 +292,13 @@ export function AiAssistant() {
     setSearched(false);
     setResults([]);
     setCompareName(null);
+    setMode(null);
+    setAlternatives([]);
+    setShowAlternatives(false);
+    setRequirement("");
+    setRecordId(null);
+    setOptInStatus("ask");
+    setOptInMsg("");
 
     const parsed = parseReq(q);
 
@@ -198,7 +314,7 @@ export function AiAssistant() {
       }
       const res = await fetch(`/api/marketplace?${params.toString()}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not load cars");
+      if (!res.ok) throw new Error(data.error ?? "Cars load nahi hui");
       const vehicles = (data.vehicles ?? []) as VehicleWithInfo[];
 
       if (parsed.compare) {
@@ -217,20 +333,95 @@ export function AiAssistant() {
           found.map(({ car }) => ({
             ...car,
             score: 0,
-            reasons: [car.city ? `Listed in ${car.city}` : "Location not set"],
+            reasons: [car.city ? `${car.city} mein listed` : "Location set nahi"],
           })),
         );
       } else {
         const scored = vehicles
           .map((v) => scoreVehicle(v, parsed))
           .sort((a, b) => b.score - a.score || (a.distance_km ?? 1e9) - (b.distance_km ?? 1e9));
-        setResults(scored.slice(0, 8));
+
+        const { brand, model } = parseBrandModel(q);
+        const spec: HardSpec = {
+          brand,
+          model,
+          fuel: parsed.fuel ?? "",
+          transmission: parsed.transmission ?? "",
+          minYear: parsed.minYear,
+          maxPrice: parsed.maxPrice,
+        };
+        const brandMatch = (v: VehicleWithInfo) =>
+          !brand || v.brand.toLowerCase() === brand.toLowerCase();
+        const modelMatch = (v: VehicleWithInfo) =>
+          !model || v.model.toLowerCase().includes(model.toLowerCase());
+        const hardMatch = (v: VehicleWithInfo) =>
+          brandMatch(v) &&
+          modelMatch(v) &&
+          (parsed.maxPrice == null || v.price <= parsed.maxPrice) &&
+          (parsed.minYear == null || v.year >= parsed.minYear) &&
+          (parsed.fuel == null || v.fuel.toLowerCase() === parsed.fuel.toLowerCase()) &&
+          (parsed.transmission == null ||
+            v.transmission.toLowerCase() === parsed.transmission.toLowerCase());
+        const matches = scored.filter(hardMatch);
+
+        // Record anonymous demand when NO car satisfies all hard criteria.
+        if (matches.length === 0) {
+          const loc = parsed.wantsNear ? getStoredLocation() : null;
+          const cityLabel = loc?.label && loc.label !== "My location" ? loc.label : "";
+          const id = await recordDemand({
+            source: "ai_advisor",
+            rawRequirement: q,
+            brand,
+            model,
+            fuel: parsed.fuel ?? "",
+            transmission: parsed.transmission ?? "",
+            minYear: parsed.minYear,
+            maxPrice: parsed.maxPrice,
+            minPrice: null,
+            city: cityLabel,
+            lat: loc?.lat ?? null,
+            lng: loc?.lng ?? null,
+            radiusKm: loc ? 50 : null,
+            status: vehicles.some((v) => brandMatch(v)) ? "partial" : "unmet",
+          });
+          if (id) setRecordId(id);
+        }
+
+        const specCount = specCountOf(spec);
+        if (specCount === 0) {
+          // Broad preferences — normal scored recommendations are fine.
+          setMode("general");
+          setResults(scored.slice(0, 8));
+        } else if (matches.length > 0) {
+          // CASE 1 — exact/hard-criteria matches exist: show only those.
+          setMode("match");
+          setResults(matches.slice(0, 8));
+        } else {
+          // CASE 2/3 — zero exact matches.
+          const close = scored
+            .filter((v) => isCloseMatch(spec, v))
+            .sort((a, b) => closeRank(spec, b) - closeRank(spec, a) || b.score - a.score)
+            .slice(0, 6)
+            .map((v) => ({ ...v, missed: missingCriteria(parsed, brand, model, v) }));
+          if (close.length > 0) {
+            // CASE 3 — meaningful close matches exist.
+            setMode("close");
+            setResults(close);
+          } else {
+            // CASE 2 — record the requirement, offer stock as labeled alternatives.
+            setMode("none");
+            setRequirement(requirementSummary(parsed, brand, model));
+            setAlternatives(scored.slice(0, 8));
+            setResults([]);
+          }
+        }
+
         const help = describeHelp(parsed);
         if (help.length) setNote(help.join(" "));
       }
       setSearched(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load cars");
+      setError(e instanceof Error ? e.message : "Cars load nahi hui");
       setSearched(true);
     } finally {
       setLoading(false);
@@ -239,6 +430,22 @@ export function AiAssistant() {
 
   function onToggleFavorite(car: VehicleWithInfo, favorite: boolean) {
     setFavState((f) => ({ ...f, [car.id]: favorite }));
+  }
+
+  async function enableNotify() {
+    if (!recordId) return;
+    const res = await fetch(`/api/demands/${recordId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notify: true }),
+    }).catch(() => null);
+    if (!res?.ok) return;
+    setOptInMsg("Stock milte hi aapko bata denge.");
+    setOptInStatus("on");
+  }
+
+  function declineNotify() {
+    setOptInStatus("off");
   }
 
   return (
@@ -250,8 +457,8 @@ export function AiAssistant() {
             Car Recommendation According to Your Requirements
           </h2>
           <p className="mt-1 text-sm text-stone-500">
-            Tell us your budget, family size, usage and preferences. Our AI will find suitable cars for
-            you from the real Car Connect inventory.
+            Budget, family size, usage aur preferences batao. Humara AI asli Car Connect inventory mein
+            se suitable cars dhoondhta hai.
           </p>
         </div>
 
@@ -271,7 +478,7 @@ export function AiAssistant() {
               aria-label="Describe the car you need"
             />
             <Button type="submit" size="lg" loading={loading} className="h-12 shrink-0">
-              Get Car Recommendations
+              Recommendations Pao
             </Button>
           </form>
 
@@ -299,51 +506,166 @@ export function AiAssistant() {
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold text-stone-700">
                   {compareName
-                    ? `Comparing: ${compareName}`
-                    : `${results.length} suggestion${results.length === 1 ? "" : "s"} from live inventory`}
+                    ? `Compare kiya ja raha: ${compareName}`
+                    : mode === "match"
+                      ? `${results.length} matching option${results.length === 1 ? "" : "s"} live inventory se`
+                      : mode === "close"
+                        ? `${results.length} close option${results.length === 1 ? "" : "s"} aapki requirement ke`
+                        : mode === "none"
+                          ? "Aapki requirement ke hisaab se matching car stock mein nahi mili"
+                          : `${results.length} suggestion${results.length === 1 ? "" : "s"} live inventory se`}
                 </h3>
                 <button
                   onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                   className="text-xs font-medium text-brand hover:underline"
                 >
-                  Ask again ↑
+                  Dobara poochho ↑
                 </button>
               </div>
 
-              {results.length === 0 ? (
-                <div className="mt-4 rounded-xl border border-dashed border-stone-300 bg-white px-6 py-10 text-center">
-                  <span className="text-3xl">🛻</span>
-                  <p className="mt-2 text-sm font-medium text-stone-700">
-                    No cars match these requirements right now.
-                  </p>
-                  <p className="mx-auto mt-1 max-w-sm text-sm text-stone-500">
-                    Try a wider budget, relax fuel/year filters, or check the full marketplace. If a
-                    field wasn&apos;t available, the AI said so instead of guessing.
-                  </p>
-                </div>
-              ) : compareName ? (
-                <CompareTable cars={results} />
-              ) : (
-                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {results.map((car) => (
-                    <div key={car.id} className="flex flex-col">
-                      <CarCard
-                        car={{ ...car, is_favorite: favState[car.id] ?? car.is_favorite }}
-                        onToggleFavorite={onToggleFavorite}
-                      />
-                      {car.reasons.length > 0 && (
-                        <ul className="mt-2 space-y-1 px-1">
-                          {car.reasons.slice(0, 3).map((r, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-xs text-stone-500">
-                              <span className="mt-0.5 text-brand">•</span>
-                              <span>{r}</span>
-                            </li>
-                          ))}
-                        </ul>
+              {compareName ? (
+                results.length === 0 ? (
+                  <div className="mt-4 rounded-xl border border-dashed border-stone-300 bg-white px-6 py-10 text-center">
+                    <span className="text-3xl">🛻</span>
+                    <p className="mt-2 text-sm font-medium text-stone-700">
+                      Abhi in requirements se koi car match nahi karti.
+                    </p>
+                    <p className="mx-auto mt-1 max-w-sm text-sm text-stone-500">
+                      Zyada budget try karo, fuel/year filters hatao, ya full marketplace dekho. Agar koi
+                      field available nahi thi, to AI ne guess karne ki bajaye bata diya.
+                    </p>
+                  </div>
+                ) : (
+                  <CompareTable cars={results} />
+                )
+              ) : mode === "none" ? (
+                <div className="mt-4 rounded-xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">📝</span>
+                    <div>
+                      <p className="text-base font-bold text-stone-900">
+                        Aapki choice record kar li gayi hai
+                      </p>
+                      <p className="mt-1 text-sm text-stone-500">
+                        Abhi aapki requirement ke hisaab se koi matching car stock mein nahi hai. Hum aisi
+                        car stock mein add karne ki koshish karenge.
+                      </p>
+                    </div>
+                  </div>
+                  {requirement && (
+                    <p className="mt-3 inline-block rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-semibold text-stone-700">
+                      {requirement}
+                    </p>
+                  )}
+                  {recordId && optInStatus !== "off" && (
+                    <div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-3.5">
+                      {optInStatus === "ask" ? (
+                        <>
+                          <p className="text-sm font-semibold text-stone-800">
+                            🔔 Is requirement ke liye updates paana hai?
+                          </p>
+                          <p className="mt-0.5 text-xs text-stone-500">
+                            Jab stock mein aisi car aayegi, to aapko yahan hi pata chale jayega.
+                          </p>
+                          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                            <Button size="sm" onClick={enableNotify}>Haan, batao</Button>
+                            <Button variant="outline" size="sm" onClick={declineNotify}>Nahi, thanks</Button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm font-medium text-emerald-700">✓ {optInMsg}</p>
                       )}
                     </div>
-                  ))}
+                  )}
+                  <div className="mt-4">
+                    <Button variant="outline" onClick={() => setShowAlternatives((v) => !v)}>
+                      {showAlternatives ? "Alternatives chhupao" : "Stock mein available cars dekho"}
+                    </Button>
+                  </div>
+                  {showAlternatives && (
+                    <div className="mt-5 border-t border-stone-100 pt-4">
+                      <p className="font-semibold text-stone-800">
+                        Aapki requirement se exact match nahi mila
+                      </p>
+                      <p className="mt-0.5 text-sm text-stone-500">
+                        Ye current available cars hain jo aapki requirement ke closest options hain.
+                      </p>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {alternatives.map((car) => (
+                          <div key={car.id} className="flex flex-col">
+                            <CarCard
+                              car={{ ...car, is_favorite: favState[car.id] ?? car.is_favorite }}
+                              onToggleFavorite={onToggleFavorite}
+                            />
+                            {car.reasons.length > 0 && (
+                              <ul className="mt-2 space-y-1 px-1">
+                                {car.reasons.slice(0, 3).map((r, i) => (
+                                  <li key={i} className="flex items-start gap-1.5 text-xs text-stone-500">
+                                    <span className="mt-0.5 text-brand">•</span>
+                                    <span>{r}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <>
+                  {mode === "close" && (
+                    <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                      Exact match nahi mila, lekin ye close options available hain.
+                    </p>
+                  )}
+                  {results.length === 0 ? (
+                    <div className="mt-4 rounded-xl border border-dashed border-stone-300 bg-white px-6 py-10 text-center">
+                      <span className="text-3xl">🛻</span>
+                      <p className="mt-2 text-sm font-medium text-stone-700">
+                        Abhi in requirements se koi car match nahi karti.
+                      </p>
+                      <p className="mx-auto mt-1 max-w-sm text-sm text-stone-500">
+                        Zyada budget try karo, fuel/year filters hatao, ya full marketplace dekho. Agar koi
+                        field available nahi thi, to AI ne guess karne ki bajaye bata diya.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {results.map((car) => (
+                        <div key={car.id} className="flex flex-col">
+                          <CarCard
+                            car={{ ...car, is_favorite: favState[car.id] ?? car.is_favorite }}
+                            onToggleFavorite={onToggleFavorite}
+                          />
+                          {mode === "close" &&
+                            car.missed &&
+                            car.missed.length > 0 && (
+                              <ul className="mt-2 space-y-1 px-1">
+                                {car.missed.map((m, i) => (
+                                  <li key={i} className="flex items-start gap-1.5 text-xs font-medium text-amber-700">
+                                    <span className="mt-0.5">⚠️</span>
+                                    <span>{m}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          {car.reasons.length > 0 && (
+                            <ul className="mt-2 space-y-1 px-1">
+                              {car.reasons.slice(0, 3).map((r, i) => (
+                                <li key={i} className="flex items-start gap-1.5 text-xs text-stone-500">
+                                  <span className="mt-0.5 text-brand">•</span>
+                                  <span>{r}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -401,8 +723,8 @@ function CompareTable({ cars }: { cars: VehicleWithInfo[] }) {
         </tbody>
       </table>
       <p className="border-t border-stone-100 px-4 py-3 text-xs text-stone-400">
-        Insurance, registration and features are shown only when dealers provide them — they are not
-        stored in the current inventory.
+        Insurance, registration aur features sirf tab dikhte hain jab dealers provide karte hain — abhi
+        current inventory mein stored nahi hain.
       </p>
     </div>
   );

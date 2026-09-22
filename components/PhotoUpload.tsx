@@ -11,7 +11,7 @@ export async function uploadFile(file: File, folder: string) {
   const { error } = await supabase.storage
     .from("vehicle-images")
     .upload(path, file, { contentType: file.type, upsert: false });
-  if (error) throw new Error(error.message || "Upload failed");
+  if (error) throw new Error(error.message || "Upload fail hua");
   const { data } = supabase.storage.from("vehicle-images").getPublicUrl(path);
   return { path, url: data.publicUrl };
 }
@@ -20,12 +20,12 @@ function PhotoPreview({ url, onRemove }: { url: string; onRemove: () => void }) 
   return (
     <div className="relative aspect-video overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="Uploaded photo" className="h-full w-full object-contain" />
+      <img src={url} alt="Upload ki hui photo" className="h-full w-full object-contain" />
       <button
         type="button"
         onClick={onRemove}
         className="absolute right-1.5 top-1.5 rounded-full bg-stone-900/70 p-1 text-white hover:bg-red-600"
-        aria-label="Remove photo"
+        aria-label="Photo hatao"
       >
         <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" />
@@ -66,7 +66,7 @@ export function PhotoUpload({
       }
       onChange([...urls, ...newUrls]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed. Please try again.");
+      setError(e instanceof Error ? e.message : "Upload fail hua. Dobara try karo.");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";

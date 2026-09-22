@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sortVehicleImages } from "@/lib/poster/sort";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -49,7 +50,13 @@ export async function GET() {
       .select("*, dealer:dealers(*), vehicle_images(*)")
       .in("id", ids)
       .eq("status", "active");
-    vehicles = v ?? [];
+    vehicles = (v ?? []).map((row) => ({
+      ...row,
+      vehicle_images: sortVehicleImages(
+        (row as { vehicle_images: Array<{ url: string; position: number; created_at: string }> })
+          .vehicle_images ?? [],
+      ),
+    }));
   }
   return Response.json({ favorites: ids, vehicles });
 }

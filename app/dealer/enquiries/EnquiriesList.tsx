@@ -70,7 +70,7 @@ export function EnquiriesList({
                   <span className="text-xs text-stone-400">{timeAgo(enq.created_at)}</span>
                 </div>
                 <p className="text-sm text-stone-500">
-                  About <span className="font-medium">{carTitle(enq.vehicle)}</span>
+                  Car: <span className="font-medium">{carTitle(enq.vehicle)}</span>
                 </p>
                 {enq.message && <p className="mt-1 text-sm text-stone-600">“{enq.message}”</p>}
               </div>
@@ -106,7 +106,7 @@ export function EnquiriesList({
                   <Badge status={td.status}>{td.status}</Badge>
                 </div>
                 <p className="text-sm text-stone-500">
-                  {carTitle(td.vehicle)} · {td.preferred_date ?? "date flexible"} {td.preferred_time && `· ${td.preferred_time}`}
+                  {carTitle(td.vehicle)} · {td.preferred_date ?? "koi bhi date"} {td.preferred_time && `· ${td.preferred_time}`}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -120,7 +120,7 @@ export function EnquiriesList({
       </div>
 
       <div className="rounded-lg bg-brand-light px-3 py-2 text-xs text-brand-dark">
-        💡 Reply to enquiries fast — jo dealer turant jawab deta hai, usse zyada sales hoti hai!
+        💡 Enquiries ka jaldi reply do — jo dealer turant jawab deta hai, usse zyada sales hoti hai!
       </div>
     </div>
   );

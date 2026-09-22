@@ -7,7 +7,7 @@ const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
   ssr: false,
   loading: () => (
     <div className="flex h-48 items-center justify-center rounded-lg border border-stone-200 bg-stone-50">
-      <Spinner label="Loading map…" />
+      <Spinner label="Map load ho raha hai…" />
     </div>
   ),
 });

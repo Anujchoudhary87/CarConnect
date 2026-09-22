@@ -86,7 +86,7 @@ export function DealerProfileForm() {
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      if (!res.ok) throw new Error(data.error ?? "Save fail hua");
 
       await fetch("/api/dealer/verification", {
         method: "POST",
@@ -101,7 +101,7 @@ export function DealerProfileForm() {
       router.push("/dealer");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save profile");
+      setError(e instanceof Error ? e.message : "Profile save nahi hua");
       setSaving(false);
     }
   }
@@ -109,7 +109,7 @@ export function DealerProfileForm() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <Spinner label="Loading…" />
+        <Spinner label="Load ho raha hai…" />
       </div>
     );
   }
@@ -196,20 +196,20 @@ export function DealerProfileForm() {
         <Card className="p-5">
           <h2 className="font-semibold text-stone-900">Verification Documents</h2>
           <p className="mt-1 text-xs text-stone-400">
-            Optional for MVP – photo of your ID (Aadhaar / PAN) and business proof. Verified dealers get a
-            badge and access to customer sell listings.
+            MVP ke liye optional – aapke ID (Aadhaar / PAN) aur business proof ki photo. Verified dealers
+            ko badge milta hai aur customer sell listings dikhti hain.
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <Label>ID Proof (Aadhaar / PAN)</Label>
               <div className="mt-1.5">
-                <DocUpload folder="verification/id" value={idProof} onChange={setIdProof} label="Upload ID proof" />
+                <DocUpload folder="verification/id" value={idProof} onChange={setIdProof} label="ID proof upload karo" />
               </div>
             </div>
             <div>
               <Label>Business Proof (optional)</Label>
               <div className="mt-1.5">
-                <DocUpload folder="verification/business" value={businessProof} onChange={setBusinessProof} label="Upload business proof" />
+                <DocUpload folder="verification/business" value={businessProof} onChange={setBusinessProof} label="Business proof upload karo" />
               </div>
             </div>
             <div className="sm:col-span-2">
@@ -223,10 +223,10 @@ export function DealerProfileForm() {
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button variant="outline" onClick={() => router.push("/dealer")}>
-            Skip for now
+            Abhi skip karo
           </Button>
           <Button onClick={save} loading={saving}>
-            Save Dealer Profile →
+            Dealer Profile Save Karo →
           </Button>
         </div>
       </div>

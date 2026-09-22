@@ -8,7 +8,7 @@ const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
   ssr: false,
   loading: () => (
     <div className="flex h-64 items-center justify-center rounded-lg border border-stone-200 bg-stone-50">
-      <Spinner label="Loading map…" />
+      <Spinner label="Map load ho raha hai…" />
     </div>
   ),
 });
@@ -94,7 +94,7 @@ export function LocationPicker({
             type="text"
             value={query}
             onChange={(e) => search(e.target.value)}
-            placeholder="Search area, city, pincode… (e.g. 'Jaipur')"
+            placeholder="Area, city, pincode dhoondo… (e.g. 'Jaipur')"
             className="h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           />
           {searching && (
@@ -120,7 +120,7 @@ export function LocationPicker({
           )}
         </div>
         <Button type="button" variant="outline" onClick={useMyLocation} loading={locating}>
-          📍 My Location
+          📍 Meri Location
         </Button>
       </div>
 

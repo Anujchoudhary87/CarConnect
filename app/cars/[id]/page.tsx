@@ -5,7 +5,9 @@ import { CarGallery } from "@/components/CarGallery";
 import { ContactBar } from "@/components/ContactBar";
 import { StaticMap } from "@/components/StaticMap";
 import { Card, Badge } from "@/components/ui";
+import { EMICalculator } from "@/components/EMICalculator";
 import { formatINR, formatKm, ownerLabel, timeAgo } from "@/lib/format";
+import { sortVehicleImages } from "@/lib/poster/sort";
 import type { Dealer, Vehicle, VehicleImage } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Car Details" };
@@ -47,7 +49,7 @@ export default async function CarDetailPage({
 
   const { data: images } = await supabase
     .from("vehicle_images")
-    .select("url, position")
+    .select("url, position, created_at")
     .eq("vehicle_id", id)
     .order("position");
   const { data: dealer } = await supabase
@@ -65,7 +67,7 @@ export default async function CarDetailPage({
     : { data: null };
 
   const dealerRow = (dealer as Dealer) ?? null;
-  const imageUrls = ((images ?? []) as VehicleImage[]).map((i) => i.url);
+  const imageUrls = sortVehicleImages(((images ?? []) as VehicleImage[])).map((i) => i.url);
   const isFavorite = Boolean((fav as { id: string } | null)?.id);
 
   const specs = [
@@ -88,7 +90,7 @@ export default async function CarDetailPage({
           </h1>
           <div className="mt-2 flex items-center gap-2 text-sm text-stone-500">
             <Badge status={car.status}>{car.status}</Badge>
-            <span>{car.city || "Location not set"}</span>
+            <span>{car.city || "Location set nahi"}</span>
           </div>
 
           <div className="mt-4">
@@ -153,6 +155,8 @@ export default async function CarDetailPage({
               {dealerRow.bio && <p className="mt-3 text-sm text-stone-600">{dealerRow.bio}</p>}
             </Card>
           )}
+
+          <EMICalculator amount={car.price} compact />
         </aside>
       </div>
     </div>

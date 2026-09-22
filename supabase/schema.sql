@@ -457,3 +457,266 @@ create policy "dealer deletes own interest"
 --   update public.users set role = 'admin', is_admin = true
 --   where email = 'you@example.com';
 -- =============================================================
+
+-- ---------- customer_demands (anonymous demand signals) ----------
+-- One row per normalized, unmet (or partially-met) customer search/AI request.
+-- Privacy: never stores name / phone / email. user_id is kept only for
+-- deduplication and admin inspection; dealers only ever see aggregated output.
+create table public.customer_demands (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  source text not null default 'ai_advisor' check (source in ('ai_advisor', 'marketplace')),
+  brand text not null default '',
+  model text not null default '',
+  fuel text not null default '',
+  transmission text not null default '',
+  min_year integer check (min_year between 1980 and 2100),
+  max_price numeric(14, 2) check (max_price >= 0),
+  min_price numeric(14, 2) check (min_price >= 0),
+  city text not null default '',
+  lat double precision,
+  lng double precision,
+  radius_km integer default 50,
+  status text not null default 'unmet' check (status in ('unmet', 'partial')),
+  fingerprint text not null default '',
+  cluster_key text not null default '',
+  raw_requirement text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index customer_demands_user_idx on public.customer_demands (user_id);
+create index customer_demands_fingerprint_idx on public.customer_demands (user_id, fingerprint);
+create index customer_demands_cluster_idx on public.customer_demands (cluster_key);
+create index customer_demands_status_idx on public.customer_demands (status);
+create index customer_demands_created_idx on public.customer_demands (created_at);
+
+alter table public.customer_demands enable row level security;
+
+create policy "customer records own demand"
+  on public.customer_demands for insert to authenticated
+  with check (user_id = auth.uid());
+create policy "customer reads own demand"
+  on public.customer_demands for select to authenticated
+  using (user_id = auth.uid());
+create policy "customer updates own demand"
+  on public.customer_demands for update to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+create policy "customer deletes own demand"
+  on public.customer_demands for delete to authenticated
+  using (user_id = auth.uid());
+create policy "admin manages demand"
+  on public.customer_demands for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- Dealers (and admin) read ONLY aggregated, privacy-safe demand clusters.
+-- Security definer: runs as the table owner and filters by role internally,
+-- so dealers never get base-table access (no user_id / raw requirements).
+create or replace function public.get_demand_clusters()
+returns table (
+  cluster_key text,
+  brand text,
+  model text,
+  fuel text,
+  min_year integer,
+  max_price numeric,
+  city text,
+  customers bigint,
+  signals bigint,
+  last_requested timestamptz
+)
+language sql stable security definer set search_path = public
+as $$
+  select
+    d.cluster_key,
+    max(d.brand)::text as brand,
+    max(d.model)::text as model,
+    max(d.fuel)::text as fuel,
+    min(d.min_year)::integer as min_year,
+    max(d.max_price)::numeric as max_price,
+    max(d.city)::text as city,
+    count(distinct d.user_id)::bigint as customers,
+    count(*)::bigint as signals,
+    max(d.created_at) as last_requested
+  from public.customer_demands d
+  where (public.is_dealer() or public.is_admin())
+    and d.status in ('unmet', 'partial')
+  group by d.cluster_key
+  order by customers desc, last_requested desc;
+$$;
+
+-- =============================================================
+-- Demand → stock match + in-app customer notifications
+-- =============================================================
+-- On top of the existing demand feature. When a dealer adds or relists an
+-- active vehicle, run_demand_matching() finds every unmet/partial demand that
+-- satisfies the vehicle's hard criteria, records the match (once per
+-- demand/vehicle pair) and notifies opted-in customers inside the app.
+-- Privacy: notifications only ever touch the vehicle's own customer; dealers
+-- never read demand base rows or customer notifications (aggregates only).
+
+alter table public.customer_demands
+  add column if not exists notify boolean not null default false;
+
+-- Vehicle ↔ demand matches. Dealer availability is NOT derived from these rows
+-- (it is counted live from active inventory); this table only powers customer
+-- notifications and admin inspection.
+create table if not exists public.demand_vehicle_matches (
+  id uuid primary key default gen_random_uuid(),
+  demand_id uuid not null references public.customer_demands (id) on delete cascade,
+  vehicle_id uuid not null references public.vehicles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (demand_id, vehicle_id)
+);
+
+create index if not exists demand_vehicle_matches_vehicle_idx
+  on public.demand_vehicle_matches (vehicle_id);
+create index if not exists demand_vehicle_matches_demand_idx
+  on public.demand_vehicle_matches (demand_id);
+
+alter table public.demand_vehicle_matches enable row level security;
+
+-- Matches are created only inside the security-definer function below; no
+-- customer or dealer ever selects these rows directly.
+create policy "admin manages matches"
+  on public.demand_vehicle_matches for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- In-app notifications for the demand owner. In-app only — no WhatsApp /
+-- SMS / email / push.
+create table if not exists public.customer_notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  type text not null default 'stock_match' check (type in ('stock_match', 'manual')),
+  demand_id uuid references public.customer_demands (id) on delete cascade,
+  vehicle_id uuid references public.vehicles (id) on delete cascade,
+  title text not null default '',
+  message text not null default '',
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists customer_notifications_user_idx
+  on public.customer_notifications (user_id, created_at desc);
+create index if not exists customer_notifications_read_idx
+  on public.customer_notifications (user_id, read_at);
+
+alter table public.customer_notifications enable row level security;
+
+create policy "customer reads own notifications"
+  on public.customer_notifications for select to authenticated
+  using (user_id = auth.uid());
+create policy "customer updates own notifications"
+  on public.customer_notifications for update to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "customer deletes own notifications"
+  on public.customer_notifications for delete to authenticated
+  using (user_id = auth.uid());
+create policy "admin manages notifications"
+  on public.customer_notifications for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- Hard-criteria matcher for one vehicle against one demand row.
+-- Mirrors the AI Advisor's exact-match rules: every non-empty demand criterion
+-- must be satisfied; empty criteria are never required. Location only binds
+-- when the demand has lat+lng+radius AND the vehicle has lat+lng (and is
+-- within radius); no demand location → vehicle is never rejected for location.
+create or replace function public.demand_vehicle_match(
+  p_vehicle_id uuid,
+  p_demand_id uuid
+)
+returns boolean
+language sql immutable
+as $$
+  select
+    (d.brand = '' or lower(v.brand) = lower(d.brand))
+    and (d.model = '' or v.model ilike '%' || d.model || '%')
+    and (d.fuel = '' or lower(v.fuel) = lower(d.fuel))
+    and (d.transmission = '' or lower(v.transmission) = lower(d.transmission))
+    and (d.min_year is null or v.year >= d.min_year)
+    and (d.min_price is null or v.price >= d.min_price)
+    and (d.max_price is null or v.price <= d.max_price)
+    and (
+      d.lat is null or d.lng is null or d.radius_km is null
+      or (
+        v.lat is not null
+        and v.lng is not null
+        and (2 * 6371 * asin(sqrt(
+              (sin(radians((v.lat - d.lat) / 2)))::double precision ^ 2
+              + cos(radians(d.lat)) * cos(radians(v.lat))
+                * (sin(radians((v.lng - d.lng) / 2)))::double precision ^ 2
+            ))) <= d.radius_km
+      )
+    )
+  from public.vehicles v
+  cross join public.customer_demands d
+  where v.id = p_vehicle_id and d.id = p_demand_id;
+$$;
+
+-- One launch point for "dealer added / relisted a vehicle". Validates the
+-- vehicle is the caller's own (or caller is admin) and is 'active'; inserts any
+-- NEW demand↔vehicle matches; then notifies the demand owners who opted in and
+-- do not already have an unread stock_match. Returns notifications created.
+create or replace function public.run_demand_matching(p_vehicle_id uuid)
+returns integer
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_dealer_id uuid;
+  v_status text;
+  created_notifications integer := 0;
+begin
+  select v.dealer_id, v.status
+    into v_dealer_id, v_status
+  from public.vehicles v
+  where v.id = p_vehicle_id;
+
+  if v_dealer_id is null then
+    raise exception 'vehicle not found';
+  end if;
+
+  if not (select public.is_dealer_owner(v_dealer_id) or public.is_admin()) then
+    raise exception 'not allowed';
+  end if;
+
+  -- Only active stock can satisfy a demand. Sold/rejected/pending vehicles
+  -- are never matched; a relist that goes back to 'active' is matched again.
+  if v_status <> 'active' then
+    return 0;
+  end if;
+
+  with matched as (
+    insert into public.demand_vehicle_matches (demand_id, vehicle_id)
+    select d.id, p_vehicle_id
+    from public.customer_demands d
+    where d.status in ('unmet', 'partial')
+      and public.demand_vehicle_match(p_vehicle_id, d.id)
+    on conflict (demand_id, vehicle_id) do nothing
+    returning id, demand_id
+  )
+  insert into public.customer_notifications (user_id, type, demand_id, vehicle_id, title, message)
+  select
+    d.user_id,
+    'stock_match',
+    m.demand_id,
+    p_vehicle_id,
+    'Aapki demand ke liye stock mil gaya',
+    v.brand || ' ' || v.model || ' (' || v.year || ', ' || v.fuel || ') — ₹'
+      || to_char(v.price / 100000, 'FM999999990.9') || 'L' || ' · ' || dl.dealership_name
+  from matched m
+  join public.customer_demands d on d.id = m.demand_id
+  join public.vehicles v on v.id = p_vehicle_id
+  left join public.dealers dl on dl.id = v.dealer_id
+  where d.notify = true
+    and not exists (
+      select 1 from public.customer_notifications n
+      where n.user_id = d.user_id
+        and n.demand_id = m.demand_id
+        and n.type = 'stock_match'
+        and n.read_at is null
+    );
+
+  get diagnostics created_notifications = row_count;
+  return created_notifications;
+end;
+$$;

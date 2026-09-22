@@ -5,11 +5,10 @@ export const metadata: Metadata = { title: "Contact" };
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
-      <p className="text-xs font-bold uppercase tracking-wide text-brand">Get in touch</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-brand">Humse judo</p>
       <h1 className="mt-1 text-3xl font-extrabold text-stone-900 sm:text-4xl">Contact Car Connect</h1>
       <p className="mt-4 text-stone-600">
-        Questions about buying, selling, or becoming a dealer? Drop us a note and we&apos;ll get back
-        to you.
+        Buying, selling ya dealer banne ke sawaal? Note chodo — hum waapas contact karenge.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -28,7 +27,7 @@ export default function ContactPage() {
       <form className="mt-8 space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-stone-700">Your name</label>
+            <label htmlFor="name" className="block text-sm font-medium text-stone-700">Aapka naam</label>
             <input
               id="name"
               required
@@ -53,7 +52,7 @@ export default function ContactPage() {
             id="msg"
             required
             rows={5}
-            placeholder="How can we help?"
+            placeholder="Kaise madad kar sakte hain?"
             className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           />
         </div>
@@ -61,11 +60,11 @@ export default function ContactPage() {
           type="submit"
           className="inline-flex h-11 items-center justify-center rounded-lg bg-brand px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
         >
-          Send Message
+          Message Bhejo
         </button>
         <p className="text-xs text-stone-400">
-          This demo form does not send email yet — for a real dealership, use the WhatsApp / call
-          buttons on any car, or reach Car Connect support through the channels above.
+          Ye demo form abhi email nahi bhejta — asli dealership ke liye, kisi bhi car pe WhatsApp /
+          call buttons use karo, ya upar diye channels se Car Connect support se jodo.
         </p>
       </form>
     </div>

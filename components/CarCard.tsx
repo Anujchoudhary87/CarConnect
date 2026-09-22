@@ -69,7 +69,7 @@ export function CarCard({
             onClick={toggleFavorite}
             disabled={busy}
             className="absolute right-2 top-2 rounded-full bg-white/90 p-2 shadow transition-transform hover:scale-110"
-            aria-label="Save car"
+            aria-label="Car save karo"
           >
             <svg
               viewBox="0 0 24 24"

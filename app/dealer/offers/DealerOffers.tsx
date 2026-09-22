@@ -46,7 +46,7 @@ export function DealerOffers({ offers }: { offers: OfferRow[] }) {
         description="'Sell My Car' listings pe offer bhej kar apna inventory badhao."
         action={
           <Link href="/sell" className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
-            Browse Sellers
+            Sellers Dekho
           </Link>
         }
       />
@@ -69,7 +69,7 @@ export function DealerOffers({ offers }: { offers: OfferRow[] }) {
             {o.listing && (
               <>
                 <span className="text-stone-400">
-                  Owner price: <strong className="text-stone-700">{formatINR(o.listing.expected_price)}</strong>
+                  Owner ki price: <strong className="text-stone-700">{formatINR(o.listing.expected_price)}</strong>
                 </span>
                 <Badge status={o.listing.status}>{o.listing.status}</Badge>
               </>
@@ -77,7 +77,7 @@ export function DealerOffers({ offers }: { offers: OfferRow[] }) {
           </div>
           {o.status === "accepted" && o.listing?.contact_phone && (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-stone-600">
-              <span>🎉 Offer accepted — owner se baat karo:</span>
+              <span>🎉 Offer accept ho gaya — owner se baat karo:</span>
               <span className="font-medium">{o.listing.contact_name} · {o.listing.contact_phone}</span>
               <a href={telLink(o.listing.contact_phone)} className="rounded-lg bg-stone-900 px-3 py-1 text-xs font-semibold text-white">📞 Call</a>
               <a href={whatsappLink(o.listing.contact_phone, `Hi ${o.listing.contact_name}, main aapke ${o.listing.brand} ${o.listing.model} pe cash offer dene wala hoon.`)} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">💬 WhatsApp</a>
@@ -85,9 +85,9 @@ export function DealerOffers({ offers }: { offers: OfferRow[] }) {
           )}
           {o.status === "pending" && (
             <div className="mt-2 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => withdraw(o.id)} loading={busy}>Withdraw Offer</Button>
+              <Button size="sm" variant="outline" onClick={() => withdraw(o.id)} loading={busy}>Offer Wapas Lo</Button>
               <Button size="sm" variant="outline">
-                <Link href={`/sell/${o.listing?.id}`}>View Listing</Link>
+                <Link href={`/sell/${o.listing?.id}`}>Listing Dekho</Link>
               </Button>
             </div>
           )}

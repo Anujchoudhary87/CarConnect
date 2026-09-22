@@ -22,7 +22,7 @@ export function MyListings() {
   }, []);
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Spinner label="Loading…" /></div>;
+    return <div className="flex justify-center py-12"><Spinner label="Load ho raha hai…" /></div>;
   }
 
   if (listings.length === 0) {
@@ -33,7 +33,7 @@ export function MyListings() {
         description="Apni gaadi bechne ke liye upar 'Apni Gaadi Becho' form bharo."
         action={
           <Link href="/sell" className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
-            Sell My Car
+            Apni Gaadi Becho
           </Link>
         }
       />

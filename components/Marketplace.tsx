@@ -1,20 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { VehicleWithInfo } from "@/lib/types";
 import { CarCard } from "@/components/CarCard";
 import { Button, Input, Select, Spinner } from "@/components/ui";
 import { BRANDS, FUELS, TRANSMISSIONS, OWNERS, DISTANCE_OPTIONS, yearOptions } from "@/lib/constants";
 import { cn } from "@/components/ui";
 import { getStoredLocation, LOCATION_EVENT, locateFromBrowser } from "@/components/location-store";
+import { parseBrandModel, recordDemand } from "@/lib/demand";
 
 const MAX_KM_OPTIONS = [
   { value: "", label: "Any KM" },
-  { value: "30000", label: "Up to 30,000" },
-  { value: "50000", label: "Up to 50,000" },
-  { value: "100000", label: "Up to 1,00,000" },
-  { value: "150000", label: "Up to 1,50,000" },
-  { value: "200000", label: "Up to 2,00,000" },
+  { value: "30000", label: "30,000 km tak" },
+  { value: "50000", label: "50,000 km tak" },
+  { value: "100000", label: "1,00,000 km tak" },
+  { value: "150000", label: "1,50,000 km tak" },
+  { value: "200000", label: "2,00,000 km tak" },
 ];
 
 const years = yearOptions();
@@ -83,7 +84,9 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
   }, []);
 
   // Try to get location once on load (use the header location if the user set it).
+  const locRef = useRef(loc?.label ?? "");
   useEffect(() => {
+    locRef.current = loc?.label ?? "";
     if (!loc) {
       (async () => {
         const located = await locateFromBrowser();
@@ -109,11 +112,49 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
         const res = await fetch(`/api/marketplace?${buildUrl()}`);
         const data = await res.json();
         if (cancelled) return;
-        if (!res.ok) throw new Error(data.error ?? "Could not load cars");
-        setVehicles(data.vehicles ?? []);
+        if (!res.ok) throw new Error(data.error ?? "Cars load nahi hui");
+        const fresh = data.vehicles ?? [];
+        setVehicles(fresh);
         if (Array.isArray(data.brands) && data.brands.length > 0) setBrands(data.brands);
+
+        // Record anonymous demand when a brand-specific search returns nothing.
+        if (fresh.length === 0) {
+          const params = new URLSearchParams(buildUrl());
+          const num = (k: string) => {
+            const v = params.get(k);
+            return v ? parseFloat(v) : null;
+          };
+          const int = (k: string) => {
+            const v = params.get(k);
+            return v ? parseInt(v, 10) : null;
+          };
+          const qRaw = params.get("q") ?? "";
+          const { brand: qBrand, model: qModel } = parseBrandModel(qRaw);
+          const effBrand = qBrand || (params.get("brand") ?? "");
+          if (effBrand) {
+            const label = locRef.current;
+            const cityLabel =
+              label && label !== "My location" && label !== "Your search location" ? label : "";
+            void recordDemand({
+              source: "marketplace",
+              rawRequirement: `${qRaw} ${effBrand}`.trim(),
+              brand: effBrand,
+              model: qModel || "",
+              fuel: params.get("fuel") ?? "",
+              transmission: params.get("transmission") ?? "",
+              minYear: int("min_year"),
+              maxPrice: num("max_price"),
+              minPrice: num("min_price"),
+              city: cityLabel,
+              lat: num("lat"),
+              lng: num("lng"),
+              radiusKm: int("radius_km"),
+              status: "unmet",
+            });
+          }
+        }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Could not load cars");
+        if (!cancelled) setError(e instanceof Error ? e.message : "Cars load nahi hui");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -138,12 +179,12 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="🔍 Search brand, model ya city… (e.g. Swift, Jaipur)"
+              placeholder="🔍 Search brand, model or city... (e.g. Swift, Jaipur)"
               className="pl-8 h-12"
             />
           </div>
           <Button onClick={getLocation} loading={locating} variant={loc ? "outline" : "secondary"} className="h-12">
-            📍 {loc ? "Location on" : "Use my location"}
+            📍 {loc ? "Location set hai" : "Meri location use karo"}
           </Button>
         </div>
 
@@ -161,7 +202,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
             <div>
               <label className="mb-1 block text-xs font-medium text-stone-500">Brand</label>
               <Select value={brand} onChange={(e) => setBrand(e.target.value)}>
-                <option value="">All brands</option>
+                <option value="">All Brands</option>
                 {brands.map((b) => (
                   <option key={b} value={b}>{b}</option>
                 ))}
@@ -170,7 +211,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
             <div>
               <label className="mb-1 block text-xs font-medium text-stone-500">Fuel</label>
               <Select value={fuel} onChange={(e) => setFuel(e.target.value)}>
-                <option value="">All fuels</option>
+                <option value="">All Fuels</option>
                 {FUELS.map((f) => (
                   <option key={f} value={f}>{f}</option>
                 ))}
@@ -203,29 +244,29 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-stone-500">Year from</label>
+              <label className="mb-1 block text-xs font-medium text-stone-500">Year From</label>
               <Select value={minYear} onChange={(e) => setMinYear(e.target.value)}>
-                <option value="">Any</option>
+                <option value="">Any Year</option>
                 {years.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-stone-500">Year to</label>
+              <label className="mb-1 block text-xs font-medium text-stone-500">Year To</label>
               <Select value={maxYear} onChange={(e) => setMaxYear(e.target.value)}>
-                <option value="">Any</option>
+                <option value="">Any Year</option>
                 {years.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-stone-500">Min price (₹ Lakh)</label>
+              <label className="mb-1 block text-xs font-medium text-stone-500">Min Price (₹ Lakh)</label>
               <Input type="number" min={0} step={0.5} value={minLakh} onChange={(e) => setMinLakh(e.target.value)} placeholder="e.g. 3" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-stone-500">Max price (₹ Lakh)</label>
+              <label className="mb-1 block text-xs font-medium text-stone-500">Max Price (₹ Lakh)</label>
               <Input type="number" min={0} step={0.5} value={maxLakh} onChange={(e) => setMaxLakh(e.target.value)} placeholder="e.g. 8" />
             </div>
             {loc && (
@@ -244,13 +285,13 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-stone-500">
-            {loading ? "Loading cars…" : `${vehicles.length} cars${loc ? " sorted by distance" : ""}`}
+            {loading ? "Cars load ho rahi hain…" : `${vehicles.length} cars${loc ? " sorted by distance" : ""}`}
           </p>
           <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-40">
-            <option value="distance">Nearest first</option>
-            <option value="newest">Newest first</option>
-            <option value="price_asc">Price: low to high</option>
-            <option value="price_desc">Price: high to low</option>
+            <option value="distance">Nearest First</option>
+            <option value="newest">Newest First</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
           </Select>
         </div>
       </div>
@@ -285,7 +326,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
             <Button variant="outline" className="mt-4" onClick={() => {
               setQ(""); setBrand(""); setFuel(""); setTransmission(""); setMinLakh(""); setMaxLakh(""); setMinYear(""); setMaxYear(""); setMaxKm(""); setRadius("");
             }}>
-              Clear all filters
+              Clear All Filters
             </Button>
           </div>
         ) : (
@@ -298,7 +339,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
       </div>
 
       {loading && (
-        <p className="mt-6 text-center"><Spinner label="Searching cars…" /></p>
+        <p className="mt-6 text-center"><Spinner label="Cars dhoond rahe hain…" /></p>
       )}
     </div>
   );

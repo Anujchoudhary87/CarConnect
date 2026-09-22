@@ -7,7 +7,7 @@ const TRUST = [
   { icon: "✓", label: "Verified Dealers" },
   { icon: "🔎", label: "Wide Selection" },
   { icon: "✨", label: "AI Recommendations" },
-  { icon: "📍", label: "Local Cars" },
+  { icon: "📍", label: "Paas Ki Cars" },
 ];
 
 export function HomeHero() {
@@ -37,8 +37,8 @@ export function HomeHero() {
         </h1>
 
         <p className="mt-4 max-w-xl text-lg text-stone-200">
-          Find verified used cars from trusted local dealers. Smarter search. Better deals. All in one
-          place.
+          Trusted local dealers se verified used cars dhoondho. Smarter search. Better deals. Sab kuch
+          ek jagah.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
@@ -46,13 +46,13 @@ export function HomeHero() {
             href="/marketplace"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-brand px-6 text-base font-semibold text-white shadow-lg shadow-red-900/30 transition-colors hover:bg-brand-dark"
           >
-            🔍 Search Cars
+            🔍 Cars Dhoondho
           </Link>
           <Link
             href="/sell"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/30 bg-white/10 px-6 text-base font-semibold text-white backdrop-blur transition-colors hover:bg-white/20"
           >
-            💸 Sell Your Car
+            💸 Apni Car Becho
           </Link>
         </div>
 

@@ -3,9 +3,10 @@ import { requireDealer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ButtonLink, EmptyState } from "@/components/ui";
 import { CarManageItem } from "@/components/CarManageItem";
+import { sortVehicleImages } from "@/lib/poster/sort";
 import type { Vehicle, VehicleImage } from "@/lib/types";
 
-export const metadata: Metadata = { title: "My Cars" };
+export const metadata: Metadata = { title: "Meri Gaadiyaan" };
 
 export default async function MyCarsPage() {
   const { dealer } = await requireDealer();
@@ -23,13 +24,19 @@ export default async function MyCarsPage() {
   if (cars.length > 0) {
     const { data: images } = await supabase
       .from("vehicle_images")
-      .select("vehicle_id, url, position")
+      .select("vehicle_id, url, position, created_at")
       .in("vehicle_id", cars.map((c) => c.id))
       .order("position", { ascending: true });
-    imageMap = ((images ?? []) as VehicleImage[]).reduce<Record<string, string[]>>((acc, img) => {
-      (acc[img.vehicle_id] ??= []).push(img.url);
-      return acc;
-    }, {});
+    const grouped = ((images ?? []) as VehicleImage[]).reduce<Record<string, VehicleImage[]>>(
+      (acc, img) => {
+        (acc[img.vehicle_id] ??= []).push(img);
+        return acc;
+      },
+      {},
+    );
+    imageMap = Object.fromEntries(
+      Object.entries(grouped).map(([vid, arr]) => [vid, sortVehicleImages(arr).map((i) => i.url)]),
+    );
   }
 
   return (

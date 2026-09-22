@@ -118,7 +118,7 @@ function SellRequestCard({ listing, offer }: { listing: CustomerSellListing; off
             {listing.year} · {formatKm(listing.km)} · {listing.fuel} · {ownerLabel(listing.owner)}
           </p>
           <p className="mt-0.5 text-sm text-stone-500">
-            📍 {listing.city || "Location not set"} · {timeAgo(listing.created_at)}
+            📍 {listing.city || "Location set nahi"} · {timeAgo(listing.created_at)}
           </p>
         </div>
         <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
@@ -127,13 +127,13 @@ function SellRequestCard({ listing, offer }: { listing: CustomerSellListing; off
           {activeOffer ? (
             <div className="flex flex-wrap items-center gap-2">
               <Badge status={activeOffer.status}>
-                Offer sent · {formatINR(activeOffer.offer_price)}
+                Offer bheja · {formatINR(activeOffer.offer_price)}
               </Badge>
               <Link
                 href="/dealer/offers"
                 className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50"
               >
-                My Offers
+                Mere Offers
               </Link>
             </div>
           ) : (
@@ -142,11 +142,11 @@ function SellRequestCard({ listing, offer }: { listing: CustomerSellListing; off
                 href={`/sell/${listing.id}`}
                 className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-700 hover:bg-stone-50"
               >
-                View Details
+                Details Dekho
               </Link>
               {canOffer && (
                 <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>
-                  {open ? "Cancel" : offer ? "Re-send Offer" : "Make Offer"}
+                  {open ? "Cancel" : offer ? "Offer Dobara Bhejo" : "Offer Bhejo"}
                 </Button>
               )}
             </div>
@@ -186,7 +186,7 @@ function SellRequestCard({ listing, offer }: { listing: CustomerSellListing; off
             </p>
           )}
           <Button type="submit" loading={busy}>
-            Send Offer
+            Offer Bhejo
           </Button>
         </form>
       )}

@@ -30,7 +30,7 @@ export function DocUpload({
       const { url } = await uploadFile(file, folder);
       onChange(url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
+      setError(e instanceof Error ? e.message : "Upload fail hua");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -45,14 +45,14 @@ export function DocUpload({
             <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="truncate">Document uploaded</span>
+            <span className="truncate">Document upload ho gaya</span>
           </span>
           <button
             type="button"
             onClick={() => onChange("")}
             className="text-xs font-medium text-red-600 hover:underline"
           >
-            Remove
+            Hatao
           </button>
         </div>
       ) : (

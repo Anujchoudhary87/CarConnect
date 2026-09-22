@@ -31,7 +31,7 @@ export function LocationSelector() {
     try {
       const loc = await geocodeCity(city);
       if (!loc) {
-        setError(`Could not find location "${city}"`);
+        setError(`"${city}" find nahi hua`);
         return;
       }
       setStoredLocation(loc);
@@ -48,7 +48,7 @@ export function LocationSelector() {
     try {
       const loc = await locateFromBrowser();
       if (!loc) {
-        setError("Location unavailable — please pick a city.");
+        setError("Location nahi mili — koi city chuno.");
         return;
       }
       setStoredLocation(loc);
@@ -81,13 +81,13 @@ export function LocationSelector() {
               disabled={busy}
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white hover:bg-stone-800 disabled:opacity-60"
             >
-              {busy ? "Locating…" : "📡 Use my location"}
+              {busy ? "Dhoond rahe hain…" : "📡 Meri location use karo"}
             </button>
             <button
               onClick={() => { setStoredLocation({ lat: 0, lng: 0, label: "" }); setLocation(null); setOpen(false); }}
               className="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-1.5 text-xs text-stone-500 hover:bg-stone-50"
             >
-              Clear — show all India
+              Hatao — all India dikhao
             </button>
           </div>
           <div className="flex flex-col gap-1 px-2 py-2">

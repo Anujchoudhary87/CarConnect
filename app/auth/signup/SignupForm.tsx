@@ -43,15 +43,15 @@ export function SignupForm({ roleHint = "customer" }: { roleHint?: string }) {
       } else {
         // Email confirmation enabled — user must verify first.
         setMessage(
-          "Almost done! We've sent a confirmation link to your email. Confirm it, then login.",
+          "Almost done! Aapke email pe confirmation link bhej diya hai. Confirm karke login karo.",
         );
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Sign up failed. Please try again.";
+      const msg = err instanceof Error ? err.message : "Sign up fail hua. Dobara try karo.";
       if (msg.includes("Supabase is not configured")) {
         setError(msg);
       } else {
-        setError("Could not create the account: " + msg);
+        setError("Account nahi ban paaya: " + msg);
       }
     } finally {
       setLoading(false);
@@ -60,7 +60,7 @@ export function SignupForm({ roleHint = "customer" }: { roleHint?: string }) {
 
   return (
     <AuthShell
-      title="Create your account"
+      title="Apna Account Banao"
       subtitle="Register karein – free, no hidden charges."
     >
       <div className="mb-5 grid grid-cols-2 gap-2 rounded-lg bg-stone-100 p-1">
@@ -86,7 +86,7 @@ export function SignupForm({ roleHint = "customer" }: { roleHint?: string }) {
 
       {role === "dealer" && (
         <p className="mb-4 rounded-lg bg-brand-light px-3 py-2 text-sm font-medium text-brand-dark">
-          Dealers: after signup, set up your dealership profile.
+          Dealers: signup ke baad apna dealership profile setup karo.
         </p>
       )}
 
@@ -97,7 +97,7 @@ export function SignupForm({ roleHint = "customer" }: { roleHint?: string }) {
             id="fullName"
             required
             autoComplete="name"
-            placeholder={role === "dealer" ? "Dealership owner name" : "Your name"}
+            placeholder={role === "dealer" ? "Dealership owner ka naam" : "Aapka naam"}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
           />
@@ -135,7 +135,7 @@ export function SignupForm({ roleHint = "customer" }: { roleHint?: string }) {
             required
             minLength={6}
             autoComplete="new-password"
-            placeholder="Minimum 6 characters"
+            placeholder="Kam se kam 6 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -143,12 +143,12 @@ export function SignupForm({ roleHint = "customer" }: { roleHint?: string }) {
         <FieldError message={error} />
         {message && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
         <Button type="submit" loading={loading} className="w-full">
-          {role === "dealer" ? "Create Dealer Account" : "Create Account"}
+          {role === "dealer" ? "Dealer Account Banao" : "Account Banao"}
         </Button>
       </form>
 
       <p className="mt-5 text-center text-sm text-stone-500">
-        Already have an account?{" "}
+        Pehle se account hai?{" "}
         <Link
           href={role === "dealer" ? "/auth/login?role=dealer" : "/auth/login"}
           className="font-semibold text-brand hover:underline"

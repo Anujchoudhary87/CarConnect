@@ -17,11 +17,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Car Connect – Used Cars Nearby | Buy & Sell",
+    default: "Car Connect – Paas Ki Used Cars | Kharido & Becho",
     template: "%s | Car Connect",
   },
   description:
-    "India's simple used-car marketplace for local dealers and customers. Find cars nearby, sell your car, and connect with verified dealers.",
+    "India ka simple used-car marketplace — local dealers aur customers ke liye. Paas ki gaadiyaan dhoondho, apni car becho, aur verified dealers se judo.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

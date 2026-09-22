@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SellForm } from "@/components/SellForm";
 
-export const metadata: Metadata = { title: "Sell My Car" };
+export const metadata: Metadata = { title: "Apni Gaadi Becho" };
 
 export default function SellPage() {
   return (
@@ -15,7 +15,7 @@ export default function SellPage() {
       <p className="mt-2 text-xs text-stone-400">
         Pehle se listing hai?{" "}
         <Link href="/sell/my-listings" className="font-semibold text-brand hover:underline">
-          My sell listings dekho →
+          Meri sell listings dekho →
         </Link>
       </p>
       <div className="mt-6">

@@ -8,12 +8,12 @@ import { getStoredLocation } from "@/components/location-store";
 const years = yearOptions();
 
 const PRICE_SLOTS = [
-  { value: "5", label: "Up to ₹5 lakh" },
-  { value: "8", label: "Up to ₹8 lakh" },
-  { value: "10", label: "Up to ₹10 lakh" },
-  { value: "15", label: "Up to ₹15 lakh" },
-  { value: "20", label: "Up to ₹20 lakh" },
-  { value: "30", label: "Up to ₹30 lakh" },
+  { value: "5", label: "₹5 lakh tak" },
+  { value: "8", label: "₹8 lakh tak" },
+  { value: "10", label: "₹10 lakh tak" },
+  { value: "15", label: "₹15 lakh tak" },
+  { value: "20", label: "₹20 lakh tak" },
+  { value: "30", label: "₹30 lakh tak" },
 ];
 
 export function HomeSearch() {
@@ -74,13 +74,13 @@ export function HomeSearch() {
                 ))}
               </select>
               <select value={fuel} onChange={(e) => setFuel(e.target.value)} className={selectClass} aria-label="Fuel type">
-                <option value="">Any Fuel</option>
+                <option value="">All Fuels</option>
                 {FUELS.map((f) => (
                   <option key={f} value={f}>{f}</option>
                 ))}
               </select>
               <select value={transmission} onChange={(e) => setTransmission(e.target.value)} className={selectClass} aria-label="Transmission">
-                <option value="">Any Gearbox</option>
+                <option value="">Any Transmission</option>
                 {TRANSMISSIONS.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
@@ -99,10 +99,10 @@ export function HomeSearch() {
               </select>
               <select value={maxKm} onChange={(e) => setMaxKm(e.target.value)} className={selectClass} aria-label="Maximum km">
                 <option value="">Any KM</option>
-                <option value="30000">Up to 30,000 km</option>
-                <option value="50000">Up to 50,000 km</option>
-                <option value="100000">Up to 1,00,000 km</option>
-                <option value="150000">Up to 1,50,000 km</option>
+                <option value="30000">30,000 km tak</option>
+                <option value="50000">50,000 km tak</option>
+                <option value="100000">1,00,000 km tak</option>
+                <option value="150000">1,50,000 km tak</option>
               </select>
               <select value={owner} onChange={(e) => setOwner(e.target.value)} className={selectClass} aria-label="Ownership">
                 <option value="">Any Owner</option>
@@ -111,9 +111,9 @@ export function HomeSearch() {
                 ))}
               </select>
               <select value={radius} onChange={(e) => setRadius(e.target.value)} className={selectClass} aria-label="Distance radius">
-                <option value="">Anywhere in India</option>
+                <option value="">All India</option>
                 {DISTANCE_OPTIONS.map((d) => (
-                  <option key={d.value} value={d.value}>Within {d.label}</option>
+                  <option key={d.value} value={d.value}>{d.label} ke andar</option>
                 ))}
               </select>
             </div>
@@ -127,14 +127,14 @@ export function HomeSearch() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-400">
             <p>
-              {radius ? "Distance searches use the location set in the header." : "Set a location in the header to enable 'Cars Near You' filters."}
+              {radius ? "Distance searches header mein set ki gayi location use karte hain." : "Set your location from the header to enable 'Cars Near You' filters."}
             </p>
             <button
               type="button"
               onClick={() => router.push("/marketplace")}
               className="font-semibold text-brand hover:underline"
             >
-              All cars & more filters →
+              All Cars & More Filters →
             </button>
           </div>
         </form>

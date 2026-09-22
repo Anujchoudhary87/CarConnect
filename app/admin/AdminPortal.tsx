@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Button, Card, EmptyState, Spinner } from "@/components/ui";
 import { formatKm, formatINR, telLink, timeAgo, whatsappLink } from "@/lib/format";
+import type { CustomerDemand, DemandCluster, DemandNotification, DemandVehicleMatch } from "@/lib/types";
 
-type Tab = "overview" | "dealers" | "customers" | "vehicles" | "sell" | "offers" | "enquiries" | "testdrives";
+type Tab = "overview" | "dealers" | "customers" | "vehicles" | "sell" | "offers" | "enquiries" | "testdrives" | "demand";
 
 const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: "overview", label: "Overview", emoji: "📊" },
@@ -15,6 +16,7 @@ const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: "offers", label: "Offers", emoji: "🤝" },
   { id: "enquiries", label: "Enquiries", emoji: "💬" },
   { id: "testdrives", label: "Test Drives", emoji: "🔑" },
+  { id: "demand", label: "Demand", emoji: "🔥" },
 ];
 
 const ENDPOINTS: Record<Tab, (status?: string) => string> = {
@@ -26,6 +28,7 @@ const ENDPOINTS: Record<Tab, (status?: string) => string> = {
   offers: () => "/api/admin/offers",
   enquiries: () => "/api/admin/enquiries",
   testdrives: () => "/api/admin/test-drives",
+  demand: () => "/api/admin/demands",
 };
 
 interface Summary {
@@ -143,6 +146,10 @@ type AdminData = Partial<Summary> & {
   offers?: OfferRow[];
   enquiries?: EnquiryRow[];
   test_drives?: TestDriveRow[];
+  signals?: CustomerDemand[];
+  clusters?: DemandCluster[];
+  matches?: DemandVehicleMatch[];
+  notifications?: DemandNotification[];
 };
 
 interface DealerDetail {
@@ -201,10 +208,10 @@ export function AdminPortal() {
     try {
       const res = await fetch(ENDPOINTS[t](status));
       const j = await res.json();
-      if (!res.ok) throw new Error(j.error ?? "Load failed");
+      if (!res.ok) throw new Error(j.error ?? "Load fail hua");
       setCache((c) => ({ ...c, [key]: j }));
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Load failed");
+      setMsg(e instanceof Error ? e.message : "Load fail hua");
     } finally {
       setLoadingTab(false);
     }
@@ -228,7 +235,7 @@ export function AdminPortal() {
       const j = await res.json();
       if (cancelled) return;
       if (res.ok) setDealerDetail(j as DealerDetail);
-      else setMsg((j.error as string) ?? "Dealer load failed");
+      else setMsg((j.error as string) ?? "Dealer load fail hua");
     })();
     return () => {
       cancelled = true;
@@ -251,10 +258,10 @@ export function AdminPortal() {
         }),
       });
       const j = await res.json();
-      if (!res.ok) throw new Error(j.error ?? "Failed");
-      setMsg(verified ? `✅ ${dealer.dealership_name} verified` : `${dealer.dealership_name} unverified`);
+      if (!res.ok) throw new Error(j.error ?? "Fail ho gaya");
+      setMsg(verified ? `✅ ${dealer.dealership_name} verified ho gaya` : `${dealer.dealership_name} ab unverified hai`);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed");
+      setMsg(e instanceof Error ? e.message : "Fail ho gaya");
     } finally {
       setBusy((b) => ({ ...b, [dealer.id]: false }));
       setConfirmAction(null);
@@ -278,12 +285,12 @@ export function AdminPortal() {
         body: JSON.stringify({ action: "delete" }),
       });
       const j = await res.json();
-      if (!res.ok) throw new Error(j.error ?? "Failed");
-      setMsg("Car deleted");
+      if (!res.ok) throw new Error(j.error ?? "Fail ho gaya");
+      setMsg("Car delete ho gayi");
       setCache((c) => ({ ...c, ["vehicles" + vehStatus]: undefined, ["overview"]: undefined }));
       void load("vehicles", vehStatus);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed");
+      setMsg(e instanceof Error ? e.message : "Fail ho gaya");
     } finally {
       setBusy((b) => ({ ...b, ["v" + id]: false }));
     }
@@ -298,14 +305,34 @@ export function AdminPortal() {
         body: JSON.stringify({ id }),
       });
       const j = await res.json();
-      if (!res.ok) throw new Error(j.error ?? "Failed");
-      setMsg("Sell listing deleted");
+      if (!res.ok) throw new Error(j.error ?? "Fail ho gaya");
+      setMsg("Sell listing delete ho gayi");
       setCache((c) => ({ ...c, ["sell"]: undefined, ["overview"]: undefined }));
       void load("sell");
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed");
+      setMsg(e instanceof Error ? e.message : "Fail ho gaya");
     } finally {
       setBusy((b) => ({ ...b, ["s" + id]: false }));
+    }
+  }
+
+  async function deleteDemandCluster(key: string) {
+    setBusy((b) => ({ ...b, ["d" + key]: true }));
+    try {
+      const res = await fetch("/api/admin/demands", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cluster_key: key }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? "Fail ho gaya");
+      setMsg("Demand cluster delete ho gaya");
+      setCache((c) => ({ ...c, ["demand"]: undefined }));
+      void load("demand");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Fail ho gaya");
+    } finally {
+      setBusy((b) => ({ ...b, ["d" + key]: false }));
     }
   }
 
@@ -316,13 +343,17 @@ export function AdminPortal() {
   const offers = (s?.offers ?? []) as OfferRow[];
   const enquiries = (s?.enquiries ?? []) as EnquiryRow[];
   const testDrives = (s?.test_drives ?? []) as TestDriveRow[];
+  const signals = (s?.signals ?? []) as CustomerDemand[];
+  const demandClusters = (s?.clusters ?? []) as DemandCluster[];
+  const matchRows = (s?.matches ?? []) as DemandVehicleMatch[];
+  const notificationRows = (s?.notifications ?? []) as DemandNotification[];
   const summary = s as Summary | undefined;
 
   if (selectedDealerId) {
     if (!dealerDetail) {
       return (
         <div className="flex justify-center py-16">
-          <Spinner label="Loading dealer…" />
+          <Spinner label="Dealer load ho raha hai…" />
         </div>
       );
     }
@@ -333,7 +364,7 @@ export function AdminPortal() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <button onClick={() => { setSelectedDealerId(null); setDealerDetail(null); }} className="text-sm font-semibold text-brand hover:underline">
-              ← Back to dealers
+              ← Dealers pe wapas
             </button>
             <h2 className="mt-1 text-xl font-extrabold text-stone-900">{d.dealership_name}</h2>
           </div>
@@ -406,7 +437,7 @@ export function AdminPortal() {
       {confirmAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4">
           <Card className="w-full max-w-sm p-5">
-            <h3 className="font-bold text-stone-900">Confirm verification change</h3>
+            <h3 className="font-bold text-stone-900">Verification change confirm karo</h3>
             <p className="mt-1 text-sm text-stone-500">
               {confirmAction.verified
                 ? `${confirmAction.name} ko verified dealer banaya jaayega.`
@@ -448,7 +479,7 @@ export function AdminPortal() {
         <div className="min-w-0">
           {loadingTab && cache[tab + (tab === "vehicles" ? vehStatus : "")] === undefined ? (
             <div className="flex justify-center py-16">
-              <Spinner label="Loading…" />
+              <Spinner label="Load ho raha hai…" />
             </div>
           ) : tab === "overview" && summary ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
@@ -483,7 +514,7 @@ export function AdminPortal() {
                     <td className="px-3 py-3">
                       <p className="font-semibold text-stone-900">{d.dealership_name}</p>
                       <button onClick={() => setSelectedDealerId(d.id)} className="text-xs font-medium text-brand hover:underline">
-                        View Details →
+                        Details Dekho →
                       </button>
                     </td>
                     <td className="px-3 py-3 text-stone-600">{d.email || "—"}</td>
@@ -688,6 +719,119 @@ export function AdminPortal() {
                   </tr>
                 ))}
               </DataTable>
+            )
+          ) : tab === "demand" ? (
+            demandClusters.length === 0 && signals.length === 0 && matchRows.length === 0 && notificationRows.length === 0 ? (
+              <EmptyState icon="🔥" title="Koi demand nahi" description="Customer demands jo inventory se match nahi hoti, yahan dikhengi." />
+            ) : (
+              <div className="space-y-6">
+                {demandClusters.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-stone-700">
+                      Aggregated demand ({demandClusters.length})
+                    </h3>
+                    <DataTable cols={["Requirement", "Fuel", "Budget", "Location", "Customers", "Touches", "Last", "Action"]}>
+                      {demandClusters.map((c) => (
+                        <tr key={c.cluster_key} className="hover:bg-stone-50">
+                          <td className="px-3 py-3 font-semibold text-stone-900">
+                            {(`${c.brand} ${c.model}`.trim() || "Any car")}
+                          </td>
+                          <td className="px-3 py-3 text-stone-600">{c.fuel || "—"}</td>
+                          <td className="px-3 py-3 whitespace-nowrap text-stone-600">
+                            {c.max_price ? formatINR(c.max_price) : "—"}
+                            {c.min_year ? ` · ${c.min_year}+` : ""}
+                          </td>
+                          <td className="px-3 py-3 text-stone-600">{c.city || "All India"}</td>
+                          <td className="px-3 py-3 font-bold text-stone-900">{c.customers}</td>
+                          <td className="px-3 py-3 text-stone-600">{c.signals}</td>
+                          <td className="px-3 py-3 whitespace-nowrap text-stone-600">{timeAgo(c.last_requested)}</td>
+                          <td className="px-3 py-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              loading={busy["d" + c.cluster_key]}
+                              onClick={() => deleteDemandCluster(c.cluster_key)}
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </DataTable>
+                  </div>
+                )}
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold text-stone-700">
+                    Raw signals ({signals.length}) — admin access only
+                  </h3>
+                  <DataTable cols={["ID", "Requirement", "Source", "Status", "Brand", "Fuel", "Price", "City", "User", "Created"]}>
+                    {signals.map((dg) => (
+                      <tr key={dg.id} className="hover:bg-stone-50">
+                        <td className="px-3 py-3"><Id id={dg.id} /></td>
+                        <td className="max-w-[240px] truncate px-3 py-3 text-stone-600" title={dg.raw_requirement}>
+                          {dg.raw_requirement || "—"}
+                        </td>
+                        <td className="px-3 py-3 text-stone-600">{dg.source}</td>
+                        <td className="px-3 py-3"><Badge status={dg.status}>{dg.status}</Badge></td>
+                        <td className="px-3 py-3 text-stone-600">{dg.brand || "—"}</td>
+                        <td className="px-3 py-3 text-stone-600">{dg.fuel || "—"}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-stone-600">
+                          {dg.max_price ? formatINR(dg.max_price) : "—"}
+                        </td>
+                        <td className="px-3 py-3 text-stone-600">{dg.city || "—"}</td>
+                        <td className="px-3 py-3"><Id id={dg.user_id} /></td>
+                        <td className="px-3 py-3 whitespace-nowrap text-stone-600">{timeAgo(dg.created_at)}</td>
+                      </tr>
+                    ))}
+                  </DataTable>
+                </div>
+
+                {matchRows.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-stone-700">
+                      Stock matches ({matchRows.length}) — demand ↔ vehicle
+                    </h3>
+                    <DataTable cols={["Match", "Demand", "Vehicle", "Created"]}>
+                      {matchRows.map((m) => (
+                        <tr key={m.id} className="hover:bg-stone-50">
+                          <td className="px-3 py-3"><Id id={m.id} /></td>
+                          <td className="px-3 py-3"><Id id={m.demand_id} /></td>
+                          <td className="px-3 py-3"><Id id={m.vehicle_id} /></td>
+                          <td className="px-3 py-3 whitespace-nowrap text-stone-600">{timeAgo(m.created_at)}</td>
+                        </tr>
+                      ))}
+                    </DataTable>
+                  </div>
+                )}
+
+                {notificationRows.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-stone-700">
+                      Notifications ({notificationRows.length}) — admin access only
+                    </h3>
+                    <DataTable cols={["ID", "Title", "Message", "Demand", "Vehicle", "User", "Read", "Created"]}>
+                      {notificationRows.map((n) => (
+                        <tr key={n.id} className="hover:bg-stone-50">
+                          <td className="px-3 py-3"><Id id={n.id} /></td>
+                          <td className="px-3 py-3 font-semibold text-stone-900">{n.title || "—"}</td>
+                          <td className="max-w-[240px] truncate px-3 py-3 text-stone-600" title={n.message}>
+                            {n.message || "—"}
+                          </td>
+                          <td className="px-3 py-3"><Id id={n.demand_id ?? ""} /></td>
+                          <td className="px-3 py-3"><Id id={n.vehicle_id ?? ""} /></td>
+                          <td className="px-3 py-3"><Id id={n.user_id} /></td>
+                          <td className="px-3 py-3">
+                            <Badge status={n.read_at ? "accepted" : "open"}>
+                              {n.read_at ? "Read" : "Unread"}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-stone-600">{timeAgo(n.created_at)}</td>
+                        </tr>
+                      ))}
+                    </DataTable>
+                  </div>
+                )}
+              </div>
             )
           ) : null}
         </div>

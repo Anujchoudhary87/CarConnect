@@ -7,22 +7,22 @@ const pillars = [
   {
     icon: "🛡️",
     title: "Verified local dealers",
-    text: "Dealers submit their business details and documents; our team approves them before they get the Verified badge. No verification detail, no badge — it all comes from the database.",
+    text: "Dealers apne business details aur documents submit karte hain; humari team approve karne ke baad hi Verified badge milta hai. Verification ka detail nahi, badge nahi — sab database se aata hai.",
   },
   {
     icon: "🤖",
-    title: "AI that explains itself",
-    text: "The AI Car Advisor matches your requirements against the real inventory and tells you why each car fits. It never invents prices, KM, features or availability.",
+    title: "AI jo khud explain karti hai",
+    text: "AI Car Advisor aapki requirements ko asli inventory se match karta hai aur batata hai ki har car kyun fit hai. Wo kabhi prices, KM, features ya availability invent nahi karta.",
   },
   {
     icon: "📍",
-    title: "Built around your location",
-    text: "Set your city once and we surface the cars and dealers closest to you — sorted by real distance.",
+    title: "Aapki location ke around built",
+    text: "City ek baar set karo aur hum aapke sabse paas wali cars aur dealers dikhate hain — asli distance se sorted.",
   },
   {
     icon: "🤝",
-    title: "Customer ↔ Dealer, nothing else",
-    text: "Buyers connect with dealers. Sellers list their car and get offers from nearby verified dealers. There is no dealer-to-dealer marketplace on Car Connect.",
+    title: "Customer ↔ Dealer, aur kuch nahi",
+    text: "Buyers dealers se judte hain. Sellers apni car list karte hain aur paas ke verified dealers se offers paate hain. Car Connect pe koi dealer-to-dealer marketplace nahi.",
   },
 ];
 
@@ -34,9 +34,9 @@ export default function AboutPage() {
         Drive Your Next Story
       </h1>
       <p className="mt-4 max-w-2xl text-stone-600">
-        Car Connect is an AI-powered used-car marketplace built for India. We connect everyday buyers
-        with trusted local dealers, and help customers sell their own car to nearby verified dealers —
-        simple, transparent and without any dealer-to-dealer clutter.
+        Car Connect India ke liye bana ek AI-powered used-car marketplace hai. Hum everyday buyers ko
+        trusted local dealers se jodte hain, aur customers apni car paas ke verified dealers ko bechte
+        hain — simple, transparent, aur kisi dealer-to-dealer clutter ke bina.
       </p>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
@@ -50,19 +50,19 @@ export default function AboutPage() {
       </div>
 
       <div className="mt-10 rounded-2xl bg-brand-light p-8 text-center">
-        <h2 className="text-xl font-extrabold text-stone-900">Ready to find your next car?</h2>
+        <h2 className="text-xl font-extrabold text-stone-900">Apni agli car dhoondhne ke liye taiyar?</h2>
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Link
             href="/marketplace"
             className="inline-flex h-11 items-center justify-center rounded-lg bg-brand px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
           >
-            Search Cars
+            Cars Dhoondho
           </Link>
           <Link
             href="/sell"
             className="inline-flex h-11 items-center justify-center rounded-lg border border-stone-300 bg-white px-6 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-50"
           >
-            Sell Your Car
+            Apni Car Becho
           </Link>
         </div>
       </div>

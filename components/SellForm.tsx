@@ -53,10 +53,10 @@ export function SellForm() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not submit");
+      if (!res.ok) throw new Error(data.error ?? "Submit nahi hua");
       setCreatedId(data.listing.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not submit");
+      setError(e instanceof Error ? e.message : "Submit nahi hua");
       setSaving(false);
     }
   }
@@ -70,9 +70,9 @@ export function SellForm() {
           Aapke area ke verified dealers ab aapki gaadi dekh sakte hain aur offers bhejenge.
         </p>
         <div className="mt-6 flex flex-col gap-2">
-          <Button onClick={() => router.push(`/sell/${createdId}`)}>See my listing & offers</Button>
+          <Button onClick={() => router.push(`/sell/${createdId}`)}>Listing & offers dekho</Button>
           <Button variant="outline" onClick={() => router.push("/sell/my-listings")}>
-            My sell listings
+            Meri sell listings
           </Button>
         </div>
       </Card>
@@ -87,7 +87,7 @@ export function SellForm() {
           <div>
             <Label htmlFor="brand">Brand *</Label>
             <Select id="brand" required value={form.brand} onChange={set("brand")}>
-              <option value="">Select brand</option>
+              <option value="">Brand chuno</option>
               {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
             </Select>
           </div>
@@ -102,7 +102,7 @@ export function SellForm() {
           <div>
             <Label htmlFor="year">Year *</Label>
             <Select id="year" required value={form.year} onChange={set("year")}>
-              <option value="">Select year</option>
+              <option value="">Year chuno</option>
               {yearOptions().map((y) => <option key={y} value={y}>{y}</option>)}
             </Select>
           </div>
@@ -113,14 +113,14 @@ export function SellForm() {
           <div>
             <Label htmlFor="fuel">Fuel *</Label>
             <Select id="fuel" required value={form.fuel} onChange={set("fuel")}>
-              <option value="">Select fuel</option>
+              <option value="">Fuel chuno</option>
               {FUELS.map((f) => <option key={f} value={f}>{f}</option>)}
             </Select>
           </div>
           <div>
             <Label htmlFor="owner">Owner *</Label>
             <Select id="owner" required value={form.owner} onChange={set("owner")}>
-              <option value="">Select owner</option>
+              <option value="">Owner chuno</option>
               {OWNERS.map((o) => <option key={o} value={o}>{o} Owner</option>)}
             </Select>
           </div>

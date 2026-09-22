@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DealerProfileForm } from "./DealerProfileForm";
 
-export const metadata: Metadata = { title: "Become a Dealer" };
+export const metadata: Metadata = { title: "Dealer Bano" };
 
 export default async function BecomeDealerPage() {
   const user = await getCurrentUser();

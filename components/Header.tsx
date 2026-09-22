@@ -7,11 +7,13 @@ import { useUser } from "@/lib/use-user";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/components/ui";
 import { LocationSelector } from "@/components/LocationSelector";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const NAV_LINKS = [
   { href: "/", label: "Home", exact: true },
-  { href: "/marketplace", label: "Search Cars" },
-  { href: "/sell", label: "Sell Your Car" },
+  { href: "/marketplace", label: "Cars Dhoondho" },
+  { href: "/sell", label: "Apni Car Becho" },
+  { href: "/emi-calculator", label: "EMI Calculator" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -98,8 +100,10 @@ export function Header() {
               </Link>
             </>
           ) : (
-            <div className="relative" ref={menuRef}>
-              <button
+            <>
+              <NotificationBell />
+              <div className="relative" ref={menuRef}>
+                <button
                 onClick={() => setUserMenuOpen((v) => !v)}
                 className="flex items-center gap-2 rounded-full border border-stone-200 bg-white py-1 pl-1 pr-3 hover:bg-stone-50"
               >
@@ -113,16 +117,16 @@ export function Header() {
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
                   <Link href="/account" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
-                    My Account
+                    Mera Account
                   </Link>
                   <Link href="/dealer" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
                     Dealer Panel
                   </Link>
                   <Link href="/favorites" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
-                    Saved Cars
+                    Saved Gaadiyaan
                   </Link>
                   <Link href="/sell" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
-                    Sell My Car
+                    Apni Car Becho
                   </Link>
                   {pathname.startsWith("/admin") && (
                     <Link href="/admin" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
@@ -138,6 +142,7 @@ export function Header() {
                 </div>
               )}
             </div>
+            </>
           )}
         </div>
 
@@ -191,13 +196,14 @@ export function Header() {
             ) : (
               <>
                 <Link href="/account" onClick={closeMenus} className="rounded-lg px-3 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-100">
-                  My Account
+                  Mera Account
                 </Link>
+                <NotificationBell variant="row" />
                 <Link href="/dealer" onClick={closeMenus} className="rounded-lg px-3 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-100">
                   Dealer Panel
                 </Link>
                 <Link href="/favorites" onClick={closeMenus} className="rounded-lg px-3 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-100">
-                  Saved Cars
+                  Saved Gaadiyaan
                 </Link>
                 <button
                   onClick={logout}

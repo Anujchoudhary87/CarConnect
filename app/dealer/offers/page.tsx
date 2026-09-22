@@ -3,7 +3,7 @@ import { requireDealer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { DealerOffers } from "./DealerOffers";
 
-export const metadata: Metadata = { title: "My Offers" };
+export const metadata: Metadata = { title: "Mere Offers" };
 
 export default async function DealerOffersPage() {
   const { dealer } = await requireDealer();

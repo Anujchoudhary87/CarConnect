@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CarForm } from "@/components/CarForm";
 import { requireDealer } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Add Car" };
+export const metadata: Metadata = { title: "Gaadi Dalo" };
 
 export default async function AddCarPage() {
   await requireDealer();

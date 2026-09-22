@@ -25,8 +25,8 @@ export function LoginForm({ next = "", roleHint = "" }: { next?: string; roleHin
       router.push(next || "/");
       router.refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Login failed. Please try again.";
-      setError(msg.includes("Supabase is not configured") ? msg : "Wrong email or password. Please try again.");
+      const msg = err instanceof Error ? err.message : "Login fail hua. Dobara try karo.";
+      setError(msg.includes("Supabase is not configured") ? msg : "Galat email ya password. Dobara try karo.");
     } finally {
       setLoading(false);
     }
@@ -70,12 +70,12 @@ export function LoginForm({ next = "", roleHint = "" }: { next?: string; roleHin
         </Button>
       </form>
       <p className="mt-5 text-center text-sm text-stone-500">
-        New here?{" "}
+        Naye ho?{" "}
         <Link
           href={roleHint === "dealer" ? "/auth/signup?role=dealer" : "/auth/signup"}
           className="font-semibold text-brand hover:underline"
         >
-          Create an account
+          Account banao
         </Link>
       </p>
     </AuthShell>

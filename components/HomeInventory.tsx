@@ -33,7 +33,7 @@ export function HomeInventory() {
       }
       const res = await fetch(`/api/marketplace?${params.toString()}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not load cars");
+      if (!res.ok) throw new Error(data.error ?? "Cars load nahi hui");
       const vehicles = (data.vehicles ?? []) as VehicleWithInfo[];
       setDeals(vehicles.slice(0, 6));
       const newest = [...vehicles].sort(
@@ -41,7 +41,7 @@ export function HomeInventory() {
       );
       setLatest(newest.slice(0, 6));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load cars");
+      setError(e instanceof Error ? e.message : "Cars load nahi hui");
     } finally {
       setLoading(false);
     }
@@ -95,11 +95,11 @@ export function HomeInventory() {
               Featured Cars {location ? "Near You" : ""} 🔥
             </h2>
             <p className="mt-0.5 text-sm text-stone-500">
-              {location ? `Showing cars around ${location.label}.` : "Set your location in the header to sort by distance."}
+              {location ? `${location.label} ke aas-paas ki cars.` : "Header mein location set karo to distance se sort karein."}
             </p>
           </div>
           <Link href="/marketplace" className="text-sm font-semibold text-brand hover:underline">
-            View all →
+            Sab dekho →
           </Link>
         </div>
 
@@ -161,10 +161,10 @@ export function HomeInventory() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-extrabold text-stone-900 sm:text-2xl">Latest Cars 🆕</h2>
-            <p className="mt-0.5 text-sm text-stone-500">Newest listings from verified dealers near you.</p>
+            <p className="mt-0.5 text-sm text-stone-500">Aapke paas ke verified dealers ki newest listings.</p>
           </div>
           <Link href="/marketplace" className="text-sm font-semibold text-brand hover:underline">
-            View all →
+            Sab dekho →
           </Link>
         </div>
         <div className="mt-4">
@@ -193,18 +193,18 @@ function CardEmpty({ location }: { location: { label: string } | null }) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-stone-300 bg-white px-6 py-14 text-center">
       <span className="text-4xl">🛻</span>
-      <h3 className="mt-3 font-semibold text-stone-900">No cars listed yet</h3>
+      <h3 className="mt-3 font-semibold text-stone-900">Abhi koi car list nahi hui</h3>
       <p className="mt-1 max-w-sm text-sm text-stone-500">
         {location
-          ? `No cars found near ${location.label}. Try a wider radius.`
-          : "Cars from live inventory will appear here. Set your location in the header to see nearby cars first."}
+          ? `${location.label} ke paas koi car nahi mili. Koi zyada radius try karo.`
+          : "Live inventory ki cars yahan dikhengi. Header mein location set karo to pehle paas ki cars dekhein."}
       </p>
       {!location && (
         <a
           href="/marketplace"
           className="mt-4 inline-flex h-11 items-center rounded-lg bg-stone-900 px-5 text-sm font-semibold text-white hover:bg-stone-800"
         >
-          Browse the marketplace
+          Marketplace browse karo
         </a>
       )}
     </div>
@@ -215,12 +215,12 @@ function CardFallback({ error }: { error: string }) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-stone-300 bg-white px-6 py-14 text-center">
       <span className="text-4xl">🗄️</span>
-      <h3 className="mt-3 font-semibold text-stone-900">Cars are on the way</h3>
+      <h3 className="mt-3 font-semibold text-stone-900">Cars aa rahi hain</h3>
       <p className="mt-1 max-w-sm text-sm text-stone-500">
-        {error} — Once the database is connected, real car listings will appear here.
+        {error} — Database connect hone ke baad real car listings yahan dikhengi.
       </p>
       <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-        Retry
+        Phir Se Karein
       </Button>
     </div>
   );

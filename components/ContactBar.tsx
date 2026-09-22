@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Dealer, Vehicle } from "@/lib/types";
 import { Button, Card, Input, Label, Textarea } from "@/components/ui";
+import { ShareButton } from "@/components/ShareButton";
 import { telLink, whatsappLink } from "@/lib/format";
 
 export function ContactBar({
@@ -39,7 +40,7 @@ export function ContactBar({
       return null;
     }
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? "Something went wrong");
+    if (!res.ok) throw new Error(data.error ?? "Kuch galat ho gaya");
     return data;
   }
 
@@ -54,7 +55,7 @@ export function ContactBar({
         setPanel(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send");
+      setError(err instanceof Error ? err.message : "Bhej nahi paye");
     } finally {
       setBusy(false);
     }
@@ -76,7 +77,7 @@ export function ContactBar({
         setPanel(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send");
+      setError(err instanceof Error ? err.message : "Bhej nahi paye");
     } finally {
       setBusy(false);
     }
@@ -120,55 +121,58 @@ export function ContactBar({
 
       <div className="grid grid-cols-2 gap-2">
         <Button variant="outline" onClick={() => setPanel(panel === "enquiry" ? null : "enquiry")}>
-          ✉️ Send Enquiry
+          ✉️ Enquiry Bhejo
         </Button>
         <Button variant="outline" onClick={() => setPanel(panel === "test" ? null : "test")}>
           🚗 Test Drive
         </Button>
       </div>
 
-      <Button variant="outline" onClick={favorite} className="w-full">
-        {favoriteState ? "❤️ Saved — tap to remove" : "♡ Save this car"}
-      </Button>
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" onClick={favorite} className="w-full">
+          {favoriteState ? "❤️ Saved — hataane ke liye tap karo" : "♡ Car Save Karo"}
+        </Button>
+        <ShareButton vehicle={vehicle} />
+      </div>
 
       {panel === "enquiry" && (
         <Card className="p-4">
-          <h3 className="font-semibold text-stone-900">Send Enquiry</h3>
+          <h3 className="font-semibold text-stone-900">Enquiry Bhejo</h3>
           <form onSubmit={sendEnquiry} className="mt-3 space-y-3">
             <div>
-              <Label htmlFor="enq-name">Your name</Label>
-              <Input id="enq-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+              <Label htmlFor="enq-name">Aapka naam</Label>
+              <Input id="enq-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Aapka naam" />
             </div>
             <div>
               <Label htmlFor="enq-msg">Message</Label>
               <Textarea id="enq-msg" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Gaadi available hai? Random price negotiate kar sakte hain?" />
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
-            <Button type="submit" loading={busy} className="w-full">Send Enquiry</Button>
+            <Button type="submit" loading={busy} className="w-full">Enquiry Bhejo</Button>
           </form>
         </Card>
       )}
 
       {panel === "test" && (
         <Card className="p-4">
-          <h3 className="font-semibold text-stone-900">Request Test Drive</h3>
+          <h3 className="font-semibold text-stone-900">Test Drive Book Karo</h3>
           <form onSubmit={sendTestDrive} className="mt-3 space-y-3">
             <div>
-              <Label htmlFor="td-name">Your name</Label>
-              <Input id="td-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+              <Label htmlFor="td-name">Aapka naam</Label>
+              <Input id="td-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Aapka naam" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="td-date">Preferred date</Label>
+                <Label htmlFor="td-date">Pasandida date</Label>
                 <Input id="td-date" type="date" value={preferredDate} onChange={(e) => setPreferredDate(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="td-time">Preferred time</Label>
+                <Label htmlFor="td-time">Pasandida time</Label>
                 <Input id="td-time" type="time" value={preferredTime} onChange={(e) => setPreferredTime(e.target.value)} />
               </div>
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
-            <Button type="submit" loading={busy} className="w-full">Request Test Drive</Button>
+            <Button type="submit" loading={busy} className="w-full">Test Drive Book Karo</Button>
           </form>
         </Card>
       )}

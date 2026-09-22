@@ -39,11 +39,11 @@ export function SellListingDetail({
         body: JSON.stringify({ listing_id: listing.id, offer_price: Number(offerPrice), message: offerMsg }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not send offer");
+      if (!res.ok) throw new Error(data.error ?? "Offer bhej nahi paye");
       setSent(true);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send offer");
+      setError(err instanceof Error ? err.message : "Offer bhej nahi paye");
     } finally {
       setBusy(false);
     }
@@ -59,11 +59,11 @@ export function SellListingDetail({
       });
       if (!res.ok) {
         const d = await res.json();
-        throw new Error(d.error ?? "Failed");
+        throw new Error(d.error ?? "Fail ho gaya");
       }
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed");
+      setError(err instanceof Error ? err.message : "Fail ho gaya");
     } finally {
       setBusy(false);
     }
@@ -102,7 +102,7 @@ export function SellListingDetail({
           <Badge status={listing.status}>{listing.status}</Badge>
         </div>
         <p className="mt-1 text-sm text-stone-500">
-          Listed {timeAgo(listing.created_at)} · {listing.city || "Location not set"}
+          Listed {timeAgo(listing.created_at)} · {listing.city || "Location set nahi"}
         </p>
       </div>
 
@@ -145,27 +145,27 @@ export function SellListingDetail({
             {isOwner ? (
               <div className="mt-3 space-y-2">
                 <a
-                  href={whatsappLink(listing.contact_phone, `Hi ${listing.contact_name}, I saw your ${listing.brand} ${listing.model} listing on Car Connect.`)}
+                  href={whatsappLink(listing.contact_phone, `Hi ${listing.contact_name}, maine aapki ${listing.brand} ${listing.model} listing Car Connect pe dekhi.`)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block rounded-lg bg-emerald-600 px-3 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700"
                 >
-                  💬 WhatsApp myself
+                  💬 Apne WhatsApp pe
                 </a>
                 {open && (
                   <div className="flex gap-2">
                     <Button variant="success" className="flex-1" onClick={() => closeListing("sold")} loading={busy}>
-                      Mark Sold
+                      Bech Di Gayi
                     </Button>
                     <Button variant="outline" className="flex-1" onClick={() => closeListing("closed")} loading={busy}>
-                      Close
+                      Band Karo
                     </Button>
                   </div>
                 )}
               </div>
             ) : (
               <div className="mt-3 text-sm text-stone-600">
-                <p className="font-medium">Contact owner:</p>
+                <p className="font-medium">Owner se contact:</p>
                 <p>{listing.contact_name} · {listing.contact_phone}</p>
                 <div className="mt-2 flex gap-2">
                   <a href={telLink(listing.contact_phone)} className="flex-1 rounded-lg bg-stone-900 px-3 py-2 text-center text-sm font-semibold text-white">
@@ -230,7 +230,7 @@ export function SellListingDetail({
               </p>
               {myOffer.status === "pending" && (
                 <Button size="sm" variant="outline" className="mt-2" onClick={() => changeOfferStatus(myOffer.id, "withdrawn")} loading={busy}>
-                  Withdraw offer
+                  Offer wapas lo
                 </Button>
               )}
             </div>
@@ -246,7 +246,7 @@ export function SellListingDetail({
               </div>
               <FieldError message={error} />
               {sent && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Offer bhej diya! 🎉</p>}
-              <Button type="submit" loading={busy}>Send Offer</Button>
+              <Button type="submit" loading={busy}>Offer Bhejo</Button>
             </form>
           )}
         </Card>

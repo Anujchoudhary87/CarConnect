@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Marketplace } from "@/components/Marketplace";
 
-export const metadata: Metadata = { title: "Buy Used Cars" };
+export const metadata: Metadata = { title: "Used Cars Kharido" };
 
 export default async function MarketplacePage({
   searchParams,

@@ -22,12 +22,12 @@ export function formatKm(value: number | string | null | undefined): string {
 export function timeAgo(date: string): string {
   const diff = Date.now() - new Date(date).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return "abhi abhi";
+  if (minutes < 60) return `${minutes} min pehle`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hr ago`;
+  if (hours < 24) return `${hours} hr pehle`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days} day${days > 1 ? "s" : ""} ago`;
+  if (days < 30) return `${days} din pehle`;
   return new Date(date).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",

@@ -18,7 +18,7 @@ export default async function DealerLayout({ children }: { children: React.React
               ⏳ Verification pending
             </span>
           )}{" "}
-          · {dealer.city || "Location not set"}
+          · {dealer.city || "Location set nahi"}
         </p>
       </div>
 

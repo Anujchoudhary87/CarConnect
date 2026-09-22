@@ -29,21 +29,21 @@ export default async function DealerDashboardPage() {
 
   const cards = [
     { label: "+ Add Car", sub: "Nayi gaadi list karo", href: "/dealer/cars/new", emoji: "🚗", btn: "Gaadi Dalo" },
-    { label: "My Cars", sub: `${stats.total} cars in inventory`, href: "/dealer/cars", emoji: "🗂️", btn: "Dekho" },
+    { label: "My Cars", sub: `${stats.total} cars inventory mein`, href: "/dealer/cars", emoji: "🗂️", btn: "Dekho" },
     { label: "Customer Enquiries", sub: `${stats.enquiries} enquiries, ${stats.testDrives} test drives`, href: "/dealer/enquiries", emoji: "💬", btn: "Dekho" },
-    { label: "My Offers", sub: `${stats.offers} offers sent on customer cars`, href: "/dealer/offers", emoji: "💰", btn: "Dekho" },
+    { label: "My Offers", sub: `${stats.offers} offers customer cars pe bheje`, href: "/dealer/offers", emoji: "💰", btn: "Dekho" },
   ];
 
   const countBoxes = [
     { label: "Active Listings", value: stats.active, tone: "text-emerald-600" },
     { label: "Sold", value: stats.sold, tone: "text-stone-600" },
-    { label: "My Offers Sent", value: stats.offers, tone: "text-brand" },
+    { label: "Bheje Gaye Offers", value: stats.offers, tone: "text-brand" },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-stone-900">Welcome back 👋</h2>
+        <h2 className="text-lg font-bold text-stone-900">Wapas aaye 👋</h2>
         <ButtonLink href="/dealer/cars/new">+ Add Car</ButtonLink>
       </div>
 
@@ -80,7 +80,7 @@ export default async function DealerDashboardPage() {
       {stats.total === 0 && (
         <EmptyState
           icon="🚗"
-          title="No cars yet"
+          title="Abhi koi gaadi nahi"
           description="Pehli gaadi dalo — customers ko dikhana shuru karo."
           action={<ButtonLink href="/dealer/cars/new">+ Add Car</ButtonLink>}
         />

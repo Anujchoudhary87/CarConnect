@@ -68,11 +68,11 @@ export function CarForm({ initial }: CarFormProps) {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not save");
+      if (!res.ok) throw new Error(data.error ?? "Save nahi hua");
       router.push("/dealer/cars");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save the car");
+      setError(e instanceof Error ? e.message : "Car save nahi hui");
       setSaving(false);
     }
   }
@@ -85,7 +85,7 @@ export function CarForm({ initial }: CarFormProps) {
           <div>
             <Label htmlFor="brand">Brand *</Label>
             <Select id="brand" required value={form.brand} onChange={set("brand")}>
-              <option value="">Select brand</option>
+              <option value="">Brand chuno</option>
               {BRANDS.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
@@ -102,7 +102,7 @@ export function CarForm({ initial }: CarFormProps) {
           <div>
             <Label htmlFor="year">Year *</Label>
             <Select id="year" required value={form.year} onChange={set("year")}>
-              <option value="">Select year</option>
+              <option value="">Year chuno</option>
               {yearOptions().map((y) => (
                 <option key={y} value={y}>{y}</option>
               ))}
@@ -111,7 +111,7 @@ export function CarForm({ initial }: CarFormProps) {
           <div>
             <Label htmlFor="fuel">Fuel *</Label>
             <Select id="fuel" required value={form.fuel} onChange={set("fuel")}>
-              <option value="">Select fuel</option>
+              <option value="">Fuel chuno</option>
               {FUELS.map((f) => (
                 <option key={f} value={f}>{f}</option>
               ))}
@@ -124,7 +124,7 @@ export function CarForm({ initial }: CarFormProps) {
           <div>
             <Label htmlFor="owner">Owner *</Label>
             <Select id="owner" required value={form.owner} onChange={set("owner")}>
-              <option value="">Select owner</option>
+              <option value="">Owner chuno</option>
               {OWNERS.map((o) => (
                 <option key={o} value={o}>{o === "4th" ? "4th or more" : o === "1st" ? "1st" : `${o}`} Owner</option>
               ))}
@@ -133,7 +133,7 @@ export function CarForm({ initial }: CarFormProps) {
           <div>
             <Label htmlFor="transmission">Transmission *</Label>
             <Select id="transmission" required value={form.transmission} onChange={set("transmission")}>
-              <option value="">Select transmission</option>
+              <option value="">Transmission chuno</option>
               {TRANSMISSIONS.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
@@ -149,7 +149,7 @@ export function CarForm({ initial }: CarFormProps) {
           </div>
           <div className="sm:col-span-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" rows={3} value={form.description} onChange={set("description")} placeholder="Condition, service history, any work needed…" />
+            <Textarea id="description" rows={3} value={form.description} onChange={set("description")} placeholder="Condition, service history, koi kaam baaki…" />
           </div>
         </div>
       </Card>
@@ -184,10 +184,10 @@ export function CarForm({ initial }: CarFormProps) {
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={() => router.push("/dealer/cars")}>
-          Cancel
+          Cancel Karo
         </Button>
         <Button type="submit" loading={saving}>
-          {editing ? "Save Changes" : "Gaadi Dalo →"}
+          {editing ? "Changes Save Karo" : "Gaadi Dalo →"}
         </Button>
       </div>
     </form>

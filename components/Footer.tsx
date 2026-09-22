@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const quickLinks = [
   { href: "/", label: "Home" },
-  { href: "/marketplace", label: "Search Cars" },
-  { href: "/sell", label: "Sell Your Car" },
+  { href: "/marketplace", label: "Cars Dhoondho" },
+  { href: "/sell", label: "Apni Car Becho" },
   { href: "/auth/login?role=dealer", label: "Dealer Login" },
 ];
 
@@ -68,7 +68,7 @@ export function Footer() {
               </span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-stone-400">
-              AI-powered used-car marketplace connecting customers with verified local dealers.
+              AI-powered used-car marketplace — verified local dealers ko customers se jodta hai.
             </p>
             <p className="mt-2 text-sm font-semibold text-stone-100">Drive Your Next Story</p>
           </div>
@@ -116,7 +116,7 @@ export function Footer() {
               ))}
             </div>
             <p className="mt-4 text-xs text-stone-500">
-              Local cars, honest prices, real dealers.
+              Local cars, sachhe prices, asli dealers.
             </p>
           </div>
         </div>

@@ -32,7 +32,7 @@ export function FavoritesList() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Spinner label="Loading…" /></div>;
+    return <div className="flex justify-center py-12"><Spinner label="Load ho raha hai…" /></div>;
   }
 
   if (cars.length === 0) {
@@ -42,7 +42,7 @@ export function FavoritesList() {
         title="Koi saved gaadi nahi"
         description="Marketplace se gaadiyon pe heart icon dabao aur yahan save karo."
         action={
-          <ButtonLink href="/marketplace">Browse Cars</ButtonLink>
+          <ButtonLink href="/marketplace">Cars Dekho</ButtonLink>
         }
       />
     );

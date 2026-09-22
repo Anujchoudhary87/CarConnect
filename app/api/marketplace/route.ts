@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { MarketplaceFilters, VehicleWithInfo } from "@/lib/types";
 import { boundingBox, haversineKm } from "@/lib/geo";
+import { sortVehicleImages } from "@/lib/poster/sort";
 
 const LIMIT = 60;
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("vehicles")
     .select(
-      "*, dealer:dealers(*), vehicle_images:vehicle_images(url, position)",
+      "*, dealer:dealers(*), vehicle_images:vehicle_images(url, position, created_at)",
     )
     .eq("status", "active");
 
@@ -96,7 +97,12 @@ export async function GET(request: NextRequest) {
     if (hasLocation && v.lat != null && v.lng != null) {
       distanceKm = haversineKm(latitude, longitude, v.lat, v.lng);
     }
-    return { ...v, distance_km: distanceKm, is_favorite: favoriteIds.has(v.id) };
+    return {
+      ...v,
+      vehicle_images: sortVehicleImages(v.vehicle_images ?? []),
+      distance_km: distanceKm,
+      is_favorite: favoriteIds.has(v.id),
+    };
   });
 
   // Sorting.

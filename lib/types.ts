@@ -72,6 +72,7 @@ export interface VehicleImage {
   url: string;
   position: number;
   created_at: string;
+  kind?: string;
 }
 
 export interface VehicleWithInfo extends Vehicle {
@@ -182,4 +183,62 @@ export interface MarketplaceFilters {
   lat?: string;
   lng?: string;
   sort?: string;
+}
+
+export type DemandSource = "ai_advisor" | "marketplace";
+
+export interface CustomerDemand {
+  id: string;
+  user_id: string;
+  source: DemandSource;
+  brand: string;
+  model: string;
+  fuel: string;
+  transmission: string;
+  min_year: number | null;
+  max_price: number | null;
+  min_price: number | null;
+  city: string;
+  lat: number | null;
+  lng: number | null;
+  radius_km: number | null;
+  status: string;
+  fingerprint: string;
+  cluster_key: string;
+  raw_requirement: string;
+  notify: boolean;
+  created_at: string;
+}
+
+export interface DemandCluster {
+  cluster_key: string;
+  brand: string;
+  model: string;
+  fuel: string;
+  min_year: number | null;
+  max_price: number | null;
+  city: string;
+  customers: number;
+  signals: number;
+  last_requested: string;
+  matching_available?: number;
+}
+
+export interface DemandVehicleMatch {
+  id: string;
+  demand_id: string;
+  vehicle_id: string;
+  created_at: string;
+}
+
+export interface DemandNotification {
+  id: string;
+  user_id: string;
+  type: string;
+  demand_id: string | null;
+  vehicle_id: string | null;
+  title: string;
+  message: string;
+  read_at: string | null;
+  created_at: string;
 }

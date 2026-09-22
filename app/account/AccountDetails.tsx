@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Badge, Button, Card, FieldError } from "@/components/ui";
+import { DemandPrefs } from "@/components/DemandPrefs";
 import type { UserProfile } from "@/lib/types";
 
 export function AccountDetails({ profile, email }: { profile: UserProfile | null; email: string }) {
@@ -22,13 +23,14 @@ export function AccountDetails({ profile, email }: { profile: UserProfile | null
   }
 
   const links = [
-    { href: "/marketplace", label: "🔍 Buy a Car", desc: "Marketplace browse karo" },
-    { href: "/sell", label: "🚗 Sell My Car", desc: "Apni gaadi bechne ke liye list karo" },
-    { href: "/sell/my-listings", label: "📋 My Sell Listings", desc: "Apni listings aur offers dekho" },
-    { href: "/favorites", label: "♥️ Saved Cars", desc: "Save ki hui gaadiyan" },
+    { href: "/marketplace", label: "🔍 Gaadi Kharido", desc: "Marketplace browse karo" },
+    { href: "/notifications", label: "🔔 Notifications", desc: "Stock match ke in-app updates" },
+    { href: "/sell", label: "🚗 Apni Gaadi Becho", desc: "Apni gaadi bechne ke liye list karo" },
+    { href: "/sell/my-listings", label: "📋 Meri Sell Listings", desc: "Apni listings aur offers dekho" },
+    { href: "/favorites", label: "♥️ Saved Gaadiyaan", desc: "Save ki hui gaadiyan" },
     ...(profile?.role === "dealer"
       ? [{ href: "/dealer", label: "🏪 Dealer Dashboard", desc: "Inventory aur enquiries" }]
-      : [{ href: "/become-dealer", label: "🏪 Become a Dealer", desc: "Dealer ban kar gaadiyan becho" }]),
+      : [{ href: "/become-dealer", label: "🏪 Dealer Bano", desc: "Dealer ban kar gaadiyan becho" }]),
     ...(profile?.is_admin ? [{ href: "/admin", label: "🛡️ Admin Panel", desc: "Manage platform" }] : []),
   ];
 
@@ -63,6 +65,8 @@ export function AccountDetails({ profile, email }: { profile: UserProfile | null
           </Link>
         ))}
       </Card>
+
+      <DemandPrefs />
 
       <FieldError message={error} />
       <Button variant="outline" onClick={logout} loading={busy}>Log Out</Button>

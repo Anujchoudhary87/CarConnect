@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { VehicleInput } from "./vehicles-input";
 import { validateInput } from "./vehicles-input";
+import { runDemandMatching } from "@/lib/demand-api";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -56,6 +57,10 @@ export async function POST(request: NextRequest) {
       images.map((url, i) => ({ vehicle_id: vehicle.id, url, position: i })),
     );
   }
+
+  // New active stock may satisfy waiting demand — match & notify best-effort.
+  // Never fails the vehicle creation if matching errors.
+  await runDemandMatching(supabase, vehicle.id).catch(() => {});
 
   return Response.json({ vehicle }, { status: 201 });
 }

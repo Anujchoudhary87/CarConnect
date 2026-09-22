@@ -8,23 +8,23 @@ import { ButtonLink } from "@/components/ui";
 const STEPS = [
   {
     icon: "📝",
-    title: "Tell Us Your Requirements",
-    text: "Budget, fuel type, family size, usage and location — simply describe it in your own words.",
+    title: "Apni Requirements Batayein",
+    text: "Budget, fuel type, family size, usage aur location — apne shabdon mein simple describe karein.",
   },
   {
     icon: "🧠",
-    title: "AI Finds Matching Cars",
-    text: "The AI searches the real Car Connect inventory — actual cars, prices and dealers from our database.",
+    title: "AI Matching Cars Dhoondhti Hai",
+    text: "AI asli Car Connect inventory search karta hai — real cars, prices aur dealers database se.",
   },
   {
     icon: "🎯",
-    title: "Get Personalized Suggestions",
-    text: "See cars that match your needs with a clear explanation of WHY each one fits.",
+    title: "Personalized Suggestions Paayein",
+    text: "Apki needs se milti hui cars dekhein — har ek fit hone ki clear wajah ke saath.",
   },
   {
     icon: "⚖️",
-    title: "Compare & Choose",
-    text: "Compare 2–3 cars side by side, then call or WhatsApp the dealer directly.",
+    title: "Compare Karo & Chuno",
+    text: "2–3 cars side-by-side compare karo, phir seedhe dealer ko call ya WhatsApp karo.",
   },
 ];
 
@@ -43,41 +43,41 @@ const TRUST_POINTS = [
   {
     icon: "🛡️",
     title: "Verified Dealers",
-    text: "Verification badges are shown only when a dealer's approval is stored in the database — no fake claims.",
+    text: "Verification badges sirf tab dikhte hain jab dealer ki approval database mein store hai — koi fake claim nahi.",
   },
   {
     icon: "🤖",
     title: "AI-Powered Search",
-    text: "Describe your needs in plain language and get honest, explainable recommendations from live inventory.",
+    text: "Apni needs plain language mein batao aur live inventory se honest, explainable recommendations pao.",
   },
   {
     icon: "📍",
     title: "Local & Nearby",
-    text: "Set your location once and sort cars by real distance — 5 km to 100 km rings.",
+    text: "Location ek baar set karo aur cars ko real distance se sort karo — 5 km se 100 km rings.",
   },
   {
     icon: "🤝",
     title: "Direct Customer↔Dealer",
-    text: "Customers buy from dealers and sell their own car to verified dealers. No dealer-to-dealer marketplace.",
+    text: "Customers dealers se kharidte hain aur apni car verified dealers ko bechte hain. Koi dealer-to-dealer marketplace nahi.",
   },
 ];
 
 const FAQ = [
   {
-    q: "What does 'Verified Dealer' mean?",
-    a: "A dealer earns the badge only after submitting verification documents that our team approves — shown from the database, not automatically.",
+    q: "'Verified Dealer' ka matlab kya hai?",
+    a: "Dealer sirf tab badge kamata hai jab wo verification documents submit karta hai jo humari team approve karti hai — database se dikhta hai, automatically nahi.",
   },
   {
-    q: "How do AI recommendations work?",
-    a: "The AI reads your requirement — budget, fuel, year, transmission, location — and filters the real Car Connect inventory. It never invents prices, KM or features; when a detail (like seating) isn't stored, it says so.",
+    q: "AI recommendations kaise kaam karti hain?",
+    a: "AI aapki requirement padhti hai — budget, fuel, year, transmission, location — aur real Car Connect inventory filter karti hai. Wo kabhi prices, KM ya features invent nahi karti; jab koi detail (jaise seating) stored nahi hai, to wo bata deti hai.",
   },
   {
-    q: "How do I sell my car?",
-    a: "Submit your car details and photos once. Nearby verified dealers see it and send you offers — you accept, reject or compare them.",
+    q: "Apni car kaise bechun?",
+    a: "Ek baar car ke details aur photos submit karo. Paas ke verified dealers dekhte hain aur aapko offers bhejte hain — aap accept, reject ya compare karte ho.",
   },
   {
-    q: "Is this a dealer-to-dealer marketplace?",
-    a: "No. Car Connect connects customers with the dealers around them. Dealer-to-dealer bidding, auctions and dealer marketplaces are not part of the product.",
+    q: "Kya ye dealer-to-dealer marketplace hai?",
+    a: "Nahi. Car Connect customers ko unke aas-paas ke dealers se jodta hai. Dealer-to-dealer bidding, auctions aur dealer marketplaces product ka hissa nahi hain.",
   },
 ];
 
@@ -90,12 +90,12 @@ export default function Home() {
       {/* 4-step AI flow */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="text-center">
-          <p className="text-xs font-bold uppercase tracking-wide text-brand">How it works</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-brand">Kaise kaam karta hai</p>
           <h2 className="mt-1 text-2xl font-extrabold text-stone-900 sm:text-3xl">
-            Car Recommendation According to Your Requirements
+            Car Recommendation Aapki Requirements Ke Hisaab Se
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-stone-500">
-            From your words to a shortlist of real cars in four simple steps.
+            Aapke shabdon se real cars ki shortlist tak — sirf chaar simple steps.
           </p>
         </div>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -125,7 +125,7 @@ export default function Home() {
       {/* Popular brands */}
       <section className="mx-auto max-w-6xl px-4 py-12">
         <h2 className="text-xl font-extrabold text-stone-900 sm:text-2xl">Popular Brands</h2>
-        <p className="mt-0.5 text-sm text-stone-500">Jump straight to the cars you love.</p>
+        <p className="mt-0.5 text-sm text-stone-500">Seedhe un cars pe jao jo aapko pasand hain.</p>
         <div className="no-scrollbar mt-4 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible">
           {POPULAR_BRANDS.map((b) => (
             <Link
@@ -136,7 +136,7 @@ export default function Home() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={b.logo} alt={`${b.name} logo`} className="mx-auto h-8 w-[110px] object-contain" />
               <p className="mt-2 text-sm font-bold text-stone-800">{b.name}</p>
-              <p className="text-xs text-brand">Browse cars →</p>
+              <p className="text-xs text-brand">Gaadiyan dekho →</p>
             </Link>
           ))}
         </div>
@@ -150,14 +150,14 @@ export default function Home() {
             Not sure which car fits your life?
           </h2>
           <p className="max-w-xl text-sm text-stone-300">
-            Ask the AI Car Advisor. Tell it your budget, family size and driving habits — it scans the
-            real inventory and explains each match.
+            AI Car Advisor se poochho. Apna budget, family size aur driving habits batao — wo real
+            inventory scan karta hai aur har match samjhata hai.
           </p>
           <a
             href="#ai-assistant"
             className="inline-flex h-12 items-center justify-center rounded-lg bg-brand px-8 text-base font-semibold text-white transition-colors hover:bg-red-700"
           >
-            💬 Ask the AI Car Advisor
+            💬 AI Car Advisor se Poochho
           </a>
         </div>
       </section>
@@ -169,26 +169,26 @@ export default function Home() {
             <p className="text-xs font-bold uppercase tracking-wide text-brand">Apni gaadi becho</p>
             <h2 className="mt-1 text-2xl font-extrabold text-stone-900 sm:text-3xl">Sell Your Car</h2>
             <p className="mt-3 max-w-lg text-sm text-stone-600">
-              Fill in your car details and photos once. Nearby <strong>verified dealers</strong> see
-              your listing and send you offers — you pick the best one. Free, no commission, direct
-              dealer-to-customer.
+              Ek baar car ke details aur photos bharo. Paas ke <strong>verified dealers</strong> aapki
+              listing dekhte hain aur offers bhejte hain — aap best chunte ho. Free, koi commission nahi,
+              seedha dealer-to-customer.
             </p>
             <ul className="mt-4 space-y-2 text-sm text-stone-700">
               <li className="flex items-center gap-2">✓ 2-minute listing form</li>
-              <li className="flex items-center gap-2">✓ Offers from nearby verified dealers</li>
-              <li className="flex items-center gap-2">✓ Accept, reject or compare offers</li>
+              <li className="flex items-center gap-2">✓ Paas ke verified dealers se offers</li>
+              <li className="flex items-center gap-2">✓ Offers accept, reject ya compare karo</li>
             </ul>
             <div className="mt-6 flex flex-wrap gap-3">
               <ButtonLink href="/sell" size="lg">
-                💸 Sell Your Car Now
+                💸 Abhi Apni Car Becho
               </ButtonLink>
               <ButtonLink href="/sell/my-listings" size="lg" variant="outline">
-                My sell listings
+                Meri sell listings
               </ButtonLink>
             </div>
           </div>
           <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-stone-900">What dealers need to see</p>
+            <p className="text-sm font-semibold text-stone-900">Dealers ko kya dekhna chahiye</p>
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
               {[
                 "Brand & model",
@@ -206,7 +206,7 @@ export default function Home() {
               ))}
             </div>
             <p className="mt-4 text-xs text-stone-400">
-              This is a customer→dealer flow. Dealer-to-dealer selling is not part of Car Connect.
+              Ye customer→dealer flow hai. Dealer-to-dealer selling Car Connect ka hissa nahi hai.
             </p>
           </div>
         </div>
@@ -217,7 +217,7 @@ export default function Home() {
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-wide text-brand">Why Car Connect</p>
           <h2 className="mt-1 text-2xl font-extrabold text-stone-900 sm:text-3xl">
-            Trusted, local and transparent
+            Trusted, local aur transparent
           </h2>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -232,7 +232,7 @@ export default function Home() {
 
         <div className="mt-12">
           <h2 className="text-center text-xl font-extrabold text-stone-900 sm:text-2xl">
-            Common questions
+            Aksar pooche jaane wale sawaal
           </h2>
           <div className="mx-auto mt-6 grid max-w-3xl gap-3">
             {FAQ.map((f) => (

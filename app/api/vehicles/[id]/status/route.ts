@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { runDemandMatching } from "@/lib/demand-api";
 
 export async function POST(request: NextRequest, ctx: RouteContext<"/api/vehicles/[id]/status">) {
   const { id } = await ctx.params;
@@ -34,5 +35,11 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/vehicle
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  // Relisted as active → stock is available again, so match waiting demand.
+  if (status === "active") {
+    await runDemandMatching(supabase, id).catch(() => {});
+  }
+
   return Response.json({ ok: true });
 }
