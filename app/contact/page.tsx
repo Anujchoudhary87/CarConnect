@@ -27,7 +27,7 @@ export default function ContactPage() {
       <form className="mt-8 space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-stone-700">Aapka naam</label>
+            <label htmlFor="name" className="block text-sm font-medium text-stone-700">Your name</label>
             <input
               id="name"
               required
@@ -60,7 +60,7 @@ export default function ContactPage() {
           type="submit"
           className="inline-flex h-11 items-center justify-center rounded-lg bg-brand px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
         >
-          Message Bhejo
+          Send Message
         </button>
         <p className="text-xs text-stone-400">
           Ye demo form abhi email nahi bhejta — asli dealership ke liye, kisi bhi car pe WhatsApp /

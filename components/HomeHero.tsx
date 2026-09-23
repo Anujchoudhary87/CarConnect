@@ -46,13 +46,13 @@ export function HomeHero() {
             href="/marketplace"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-brand px-6 text-base font-semibold text-white shadow-lg shadow-red-900/30 transition-colors hover:bg-brand-dark"
           >
-            🔍 Cars Dhoondho
+            🔍 Find Cars
           </Link>
           <Link
             href="/sell"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/30 bg-white/10 px-6 text-base font-semibold text-white backdrop-blur transition-colors hover:bg-white/20"
           >
-            💸 Apni Car Becho
+            💸 Sell Your Car
           </Link>
         </div>
 

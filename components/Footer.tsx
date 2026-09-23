@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const quickLinks = [
   { href: "/", label: "Home" },
-  { href: "/marketplace", label: "Cars Dhoondho" },
-  { href: "/sell", label: "Apni Car Becho" },
+  { href: "/marketplace", label: "Find Cars" },
+  { href: "/sell", label: "Sell Your Car" },
   { href: "/auth/login?role=dealer", label: "Dealer Login" },
 ];
 
@@ -62,7 +62,12 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-brand text-white">🚘</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/Logo.png"
+                alt="Car Connect"
+                className="h-9 w-auto rounded-lg object-contain ring-1 ring-stone-700"
+              />
               <span className="text-lg font-extrabold text-white">
                 Car <span className="text-brand">Connect</span>
               </span>

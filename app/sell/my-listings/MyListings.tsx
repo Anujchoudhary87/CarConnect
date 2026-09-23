@@ -30,10 +30,10 @@ export function MyListings() {
       <EmptyState
         icon="🚗"
         title="Abhi koi listing nahi"
-        description="Apni gaadi bechne ke liye upar 'Apni Gaadi Becho' form bharo."
+        description="Apni gaadi bechne ke liye upar 'Sell Your Car' form bharo."
         action={
           <Link href="/sell" className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
-            Apni Gaadi Becho
+            Sell Your Car
           </Link>
         }
       />

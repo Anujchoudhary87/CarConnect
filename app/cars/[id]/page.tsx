@@ -6,11 +6,103 @@ import { ContactBar } from "@/components/ContactBar";
 import { StaticMap } from "@/components/StaticMap";
 import { Card, Badge } from "@/components/ui";
 import { EMICalculator } from "@/components/EMICalculator";
+import { APP_URL } from "@/lib/env";
 import { formatINR, formatKm, ownerLabel, timeAgo } from "@/lib/format";
 import { sortVehicleImages } from "@/lib/poster/sort";
+import { publicVehicleUrl } from "@/lib/share";
 import type { Dealer, Vehicle, VehicleImage } from "@/lib/types";
 
-export const metadata: Metadata = { title: "Car Details" };
+// Social/WhatsApp preview metadata. Reuses the same cover-image ordering the
+// gallery uses (poster/cover first, then originals) and the existing APP_URL
+// resolution so generated meta never contains a localhost or filesystem URL.
+function resolveCoverImage(imageUrls: string[], baseUrl: string): string {
+  for (const candidate of imageUrls) {
+    let url = (candidate ?? "").trim();
+    if (!url) continue;
+    if (url.startsWith("//")) url = `https:${url}`;
+    else if (url.startsWith("/")) url = `${baseUrl}${url}`;
+    if (!/^https:\/\//i.test(url)) continue;
+    if (/localhost/i.test(url)) continue;
+    return url;
+  }
+  return `${baseUrl}/Logo.png`;
+}
+
+function vehicleTitle(car: Vehicle): string {
+  return [car.brand, car.model, car.variant].filter(Boolean).join(" ");
+}
+
+function vehicleDescription(car: Vehicle): string {
+  return [
+    formatINR(car.price),
+    String(car.year),
+    car.fuel,
+    formatKm(car.km),
+    ownerLabel(car.owner),
+    car.city,
+  ]
+    .filter(Boolean)
+    .join(" • ");
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { data: vehicle } = await supabase
+    .from("vehicles")
+    .select("id, status, brand, model, variant, price, year, fuel, km, owner, city")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!vehicle) return { title: "Car Details" };
+
+  const car = vehicle as Vehicle;
+
+  // Private cars (pending/sold/rejected) are not indexed publicly. Keep the
+  // metadata minimal so the owner/admin page render (handled below) is untouched.
+  if (car.status !== "active") return { title: "Car Details" };
+
+  const { data: images } = await supabase
+    .from("vehicle_images")
+    .select("url, position, created_at")
+    .eq("vehicle_id", id)
+    .order("position");
+
+  const imageUrls = sortVehicleImages(((images ?? []) as VehicleImage[])).map((i) => i.url);
+  const metaImage = resolveCoverImage(imageUrls, APP_URL);
+
+  const title = vehicleTitle(car);
+  const description = vehicleDescription(car);
+  const pageUrl = publicVehicleUrl(car.id);
+
+  const shareTitle = `${title} | Car Connect`;
+
+  return {
+    metadataBase: new URL(APP_URL),
+    title,
+    description,
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title: shareTitle,
+      description,
+      url: pageUrl,
+      siteName: "Car Connect",
+      type: "website",
+      images: [{ url: metaImage, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: shareTitle,
+      description,
+      images: [metaImage],
+    },
+  };
+}
 
 export default async function CarDetailPage({
   params,

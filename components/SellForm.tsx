@@ -65,14 +65,14 @@ export function SellForm() {
     return (
       <Card className="mx-auto max-w-lg p-8 text-center">
         <span className="text-5xl">🎉</span>
-        <h2 className="mt-3 text-xl font-bold text-stone-900">Listing live ho gayi!</h2>
+        <h2 className="mt-3 text-xl font-bold text-stone-900">Listing is live!</h2>
         <p className="mt-1 text-sm text-stone-500">
           Aapke area ke verified dealers ab aapki gaadi dekh sakte hain aur offers bhejenge.
         </p>
         <div className="mt-6 flex flex-col gap-2">
-          <Button onClick={() => router.push(`/sell/${createdId}`)}>Listing & offers dekho</Button>
+          <Button onClick={() => router.push(`/sell/${createdId}`)}>View Listing & Offers</Button>
           <Button variant="outline" onClick={() => router.push("/sell/my-listings")}>
-            Meri sell listings
+            My Listings
           </Button>
         </div>
       </Card>
@@ -87,7 +87,7 @@ export function SellForm() {
           <div>
             <Label htmlFor="brand">Brand *</Label>
             <Select id="brand" required value={form.brand} onChange={set("brand")}>
-              <option value="">Brand chuno</option>
+              <option value="">Select brand</option>
               {BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}
             </Select>
           </div>
@@ -102,7 +102,7 @@ export function SellForm() {
           <div>
             <Label htmlFor="year">Year *</Label>
             <Select id="year" required value={form.year} onChange={set("year")}>
-              <option value="">Year chuno</option>
+              <option value="">Select year</option>
               {yearOptions().map((y) => <option key={y} value={y}>{y}</option>)}
             </Select>
           </div>
@@ -113,14 +113,14 @@ export function SellForm() {
           <div>
             <Label htmlFor="fuel">Fuel *</Label>
             <Select id="fuel" required value={form.fuel} onChange={set("fuel")}>
-              <option value="">Fuel chuno</option>
+              <option value="">Select fuel</option>
               {FUELS.map((f) => <option key={f} value={f}>{f}</option>)}
             </Select>
           </div>
           <div>
             <Label htmlFor="owner">Owner *</Label>
             <Select id="owner" required value={form.owner} onChange={set("owner")}>
-              <option value="">Owner chuno</option>
+              <option value="">Select owner</option>
               {OWNERS.map((o) => <option key={o} value={o}>{o} Owner</option>)}
             </Select>
           </div>
@@ -181,7 +181,7 @@ export function SellForm() {
 
       <FieldError message={error} />
       <Button type="submit" loading={saving} className="w-full" size="lg">
-        Apni Gaadi List Karo →
+        List Your Car →
       </Button>
       <p className="text-center text-xs text-stone-400">
         Listing submit karte hi aapke area ke verified dealers ko dikhne lagegi.

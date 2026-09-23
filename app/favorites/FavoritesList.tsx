@@ -42,7 +42,7 @@ export function FavoritesList() {
         title="Koi saved gaadi nahi"
         description="Marketplace se gaadiyon pe heart icon dabao aur yahan save karo."
         action={
-          <ButtonLink href="/marketplace">Cars Dekho</ButtonLink>
+          <ButtonLink href="/marketplace">View Cars</ButtonLink>
         }
       />
     );

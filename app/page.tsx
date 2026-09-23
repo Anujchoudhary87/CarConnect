@@ -180,10 +180,10 @@ export default function Home() {
             </ul>
             <div className="mt-6 flex flex-wrap gap-3">
               <ButtonLink href="/sell" size="lg">
-                💸 Abhi Apni Car Becho
+                💸 Sell Your Car
               </ButtonLink>
               <ButtonLink href="/sell/my-listings" size="lg" variant="outline">
-                Meri sell listings
+                My Listings
               </ButtonLink>
             </div>
           </div>

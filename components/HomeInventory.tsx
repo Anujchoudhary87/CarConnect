@@ -99,7 +99,7 @@ export function HomeInventory() {
             </p>
           </div>
           <Link href="/marketplace" className="text-sm font-semibold text-brand hover:underline">
-            Sab dekho →
+            See All →
           </Link>
         </div>
 
@@ -164,7 +164,7 @@ export function HomeInventory() {
             <p className="mt-0.5 text-sm text-stone-500">Aapke paas ke verified dealers ki newest listings.</p>
           </div>
           <Link href="/marketplace" className="text-sm font-semibold text-brand hover:underline">
-            Sab dekho →
+            See All →
           </Link>
         </div>
         <div className="mt-4">
@@ -204,7 +204,7 @@ function CardEmpty({ location }: { location: { label: string } | null }) {
           href="/marketplace"
           className="mt-4 inline-flex h-11 items-center rounded-lg bg-stone-900 px-5 text-sm font-semibold text-white hover:bg-stone-800"
         >
-          Marketplace browse karo
+          Browse Marketplace
         </a>
       )}
     </div>
@@ -220,7 +220,7 @@ function CardFallback({ error }: { error: string }) {
         {error} — Database connect hone ke baad real car listings yahan dikhengi.
       </p>
       <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-        Phir Se Karein
+        Try Again
       </Button>
     </div>
   );

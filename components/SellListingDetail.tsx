@@ -150,15 +150,15 @@ export function SellListingDetail({
                   rel="noopener noreferrer"
                   className="block rounded-lg bg-emerald-600 px-3 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700"
                 >
-                  💬 Apne WhatsApp pe
+                  💬 WhatsApp
                 </a>
                 {open && (
                   <div className="flex gap-2">
                     <Button variant="success" className="flex-1" onClick={() => closeListing("sold")} loading={busy}>
-                      Bech Di Gayi
+                      Mark as Sold
                     </Button>
                     <Button variant="outline" className="flex-1" onClick={() => closeListing("closed")} loading={busy}>
-                      Band Karo
+                      Close Listing
                     </Button>
                   </div>
                 )}

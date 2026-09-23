@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AccountDetails } from "./AccountDetails";
 import type { UserProfile } from "@/lib/types";
 
-export const metadata: Metadata = { title: "Mera Account" };
+export const metadata: Metadata = { title: "My Account" };
 
 export default async function AccountPage() {
   const user = await requireAuth();
@@ -17,7 +17,7 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-1 text-2xl font-extrabold text-stone-900">Mera Account 👤</h1>
+      <h1 className="mb-1 text-2xl font-extrabold text-stone-900">My Account 👤</h1>
       <p className="mb-6 text-sm text-stone-500">Apni profile aur settings ka center.</p>
       <AccountDetails
         profile={(profile as UserProfile) ?? null}

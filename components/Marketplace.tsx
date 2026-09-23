@@ -184,7 +184,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
             />
           </div>
           <Button onClick={getLocation} loading={locating} variant={loc ? "outline" : "secondary"} className="h-12">
-            📍 {loc ? "Location set hai" : "Meri location use karo"}
+            📍 {loc ? "Location set" : "Use my location"}
           </Button>
         </div>
 

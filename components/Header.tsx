@@ -11,8 +11,8 @@ import { NotificationBell } from "@/components/NotificationBell";
 
 const NAV_LINKS = [
   { href: "/", label: "Home", exact: true },
-  { href: "/marketplace", label: "Cars Dhoondho" },
-  { href: "/sell", label: "Apni Car Becho" },
+  { href: "/marketplace", label: "Find Cars" },
+  { href: "/sell", label: "Sell Your Car" },
   { href: "/emi-calculator", label: "EMI Calculator" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
@@ -72,7 +72,12 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
         <Link href="/" className="flex items-center gap-2 shrink-0">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-brand text-lg text-white">🚘</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/Logo.png"
+            alt="Car Connect"
+            className="h-9 w-auto object-contain"
+          />
           <span className="hidden text-lg font-extrabold tracking-tight text-stone-900 sm:block">
             Car <span className="text-brand">Connect</span>
           </span>
@@ -117,16 +122,16 @@ export function Header() {
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
                   <Link href="/account" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
-                    Mera Account
+                    My Account
                   </Link>
                   <Link href="/dealer" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
                     Dealer Panel
                   </Link>
                   <Link href="/favorites" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
-                    Saved Gaadiyaan
+                    Saved Cars
                   </Link>
                   <Link href="/sell" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
-                    Apni Car Becho
+                    Sell Your Car
                   </Link>
                   {pathname.startsWith("/admin") && (
                     <Link href="/admin" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50">
@@ -196,14 +201,14 @@ export function Header() {
             ) : (
               <>
                 <Link href="/account" onClick={closeMenus} className="rounded-lg px-3 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-100">
-                  Mera Account
+                  My Account
                 </Link>
                 <NotificationBell variant="row" />
                 <Link href="/dealer" onClick={closeMenus} className="rounded-lg px-3 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-100">
                   Dealer Panel
                 </Link>
                 <Link href="/favorites" onClick={closeMenus} className="rounded-lg px-3 py-2.5 text-sm font-medium text-stone-800 hover:bg-stone-100">
-                  Saved Gaadiyaan
+                  Saved Cars
                 </Link>
                 <button
                   onClick={logout}

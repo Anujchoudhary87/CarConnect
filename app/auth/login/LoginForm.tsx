@@ -75,7 +75,7 @@ export function LoginForm({ next = "", roleHint = "" }: { next?: string; roleHin
           href={roleHint === "dealer" ? "/auth/signup?role=dealer" : "/auth/signup"}
           className="font-semibold text-brand hover:underline"
         >
-          Account banao
+          Create Account
         </Link>
       </p>
     </AuthShell>

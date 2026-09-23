@@ -13,7 +13,12 @@ export function AuthShell({
   return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-12">
       <Link href="/" className="mx-auto mb-6 flex items-center gap-2">
-        <span className="flex size-10 items-center justify-center rounded-lg bg-brand text-xl text-white">🚘</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/Logo.png"
+          alt="Car Connect"
+          className="h-10 w-auto object-contain"
+        />
         <span className="text-xl font-extrabold tracking-tight text-stone-900">
           Car <span className="text-brand">Connect</span>
         </span>

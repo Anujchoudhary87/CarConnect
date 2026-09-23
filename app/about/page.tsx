@@ -56,13 +56,13 @@ export default function AboutPage() {
             href="/marketplace"
             className="inline-flex h-11 items-center justify-center rounded-lg bg-brand px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
           >
-            Cars Dhoondho
+            Find Cars
           </Link>
           <Link
             href="/sell"
             className="inline-flex h-11 items-center justify-center rounded-lg border border-stone-300 bg-white px-6 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-50"
           >
-            Apni Car Becho
+            Sell Your Car
           </Link>
         </div>
       </div>

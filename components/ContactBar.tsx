@@ -121,7 +121,7 @@ export function ContactBar({
 
       <div className="grid grid-cols-2 gap-2">
         <Button variant="outline" onClick={() => setPanel(panel === "enquiry" ? null : "enquiry")}>
-          ✉️ Enquiry Bhejo
+          ✉️ Send Enquiry
         </Button>
         <Button variant="outline" onClick={() => setPanel(panel === "test" ? null : "test")}>
           🚗 Test Drive
@@ -130,49 +130,49 @@ export function ContactBar({
 
       <div className="grid grid-cols-2 gap-2">
         <Button variant="outline" onClick={favorite} className="w-full">
-          {favoriteState ? "❤️ Saved — hataane ke liye tap karo" : "♡ Car Save Karo"}
+          {favoriteState ? "❤️ Saved" : "♡ Save"}
         </Button>
         <ShareButton vehicle={vehicle} />
       </div>
 
       {panel === "enquiry" && (
         <Card className="p-4">
-          <h3 className="font-semibold text-stone-900">Enquiry Bhejo</h3>
+          <h3 className="font-semibold text-stone-900">Send Enquiry</h3>
           <form onSubmit={sendEnquiry} className="mt-3 space-y-3">
             <div>
-              <Label htmlFor="enq-name">Aapka naam</Label>
-              <Input id="enq-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Aapka naam" />
+              <Label htmlFor="enq-name">Your name</Label>
+              <Input id="enq-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
             </div>
             <div>
               <Label htmlFor="enq-msg">Message</Label>
               <Textarea id="enq-msg" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Gaadi available hai? Random price negotiate kar sakte hain?" />
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
-            <Button type="submit" loading={busy} className="w-full">Enquiry Bhejo</Button>
+            <Button type="submit" loading={busy} className="w-full">Send Enquiry</Button>
           </form>
         </Card>
       )}
 
       {panel === "test" && (
         <Card className="p-4">
-          <h3 className="font-semibold text-stone-900">Test Drive Book Karo</h3>
+          <h3 className="font-semibold text-stone-900">Test Drive</h3>
           <form onSubmit={sendTestDrive} className="mt-3 space-y-3">
             <div>
-              <Label htmlFor="td-name">Aapka naam</Label>
-              <Input id="td-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Aapka naam" />
+              <Label htmlFor="td-name">Your name</Label>
+              <Input id="td-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="td-date">Pasandida date</Label>
+                <Label htmlFor="td-date">Preferred date</Label>
                 <Input id="td-date" type="date" value={preferredDate} onChange={(e) => setPreferredDate(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="td-time">Pasandida time</Label>
+                <Label htmlFor="td-time">Preferred time</Label>
                 <Input id="td-time" type="time" value={preferredTime} onChange={(e) => setPreferredTime(e.target.value)} />
               </div>
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
-            <Button type="submit" loading={busy} className="w-full">Test Drive Book Karo</Button>
+            <Button type="submit" loading={busy} className="w-full">Book Test Drive</Button>
           </form>
         </Card>
       )}

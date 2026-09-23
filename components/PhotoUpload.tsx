@@ -20,12 +20,12 @@ function PhotoPreview({ url, onRemove }: { url: string; onRemove: () => void }) 
   return (
     <div className="relative aspect-video overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="Upload ki hui photo" className="h-full w-full object-contain" />
+      <img src={url} alt="Uploaded photo" className="h-full w-full object-contain" />
       <button
         type="button"
         onClick={onRemove}
         className="absolute right-1.5 top-1.5 rounded-full bg-stone-900/70 p-1 text-white hover:bg-red-600"
-        aria-label="Photo hatao"
+        aria-label="Remove photo"
       >
         <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" />
@@ -95,7 +95,7 @@ export function PhotoUpload({
                 <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
                 </svg>
-                <span className="mt-1 text-xs font-medium">Photo add karein</span>
+                <span className="mt-1 text-xs font-medium">Add photo</span>
               </>
             )}
           </button>

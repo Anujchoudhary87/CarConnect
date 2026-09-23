@@ -85,7 +85,7 @@ export function CarManageItem({
             disabled={busy !== null}
             className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
           >
-            Relist Karo
+            Relist
           </button>
         ) : (
           <button
@@ -103,13 +103,13 @@ export function CarManageItem({
               disabled={busy !== null}
               className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700"
             >
-              {busy === "delete" ? "Delete ho raha hai…" : "Confirm Karo"}
+              {busy === "delete" ? "Deleting…" : "Confirm"}
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
               className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-600"
             >
-              Nahi
+              Cancel
             </button>
           </span>
         ) : (

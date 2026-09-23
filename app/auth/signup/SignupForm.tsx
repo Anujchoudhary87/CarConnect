@@ -60,7 +60,7 @@ export function SignupForm({ roleHint = "customer" }: { roleHint?: string }) {
 
   return (
     <AuthShell
-      title="Apna Account Banao"
+      title="Create Your Account"
       subtitle="Register karein – free, no hidden charges."
     >
       <div className="mb-5 grid grid-cols-2 gap-2 rounded-lg bg-stone-100 p-1">
@@ -143,7 +143,7 @@ export function SignupForm({ roleHint = "customer" }: { roleHint?: string }) {
         <FieldError message={error} />
         {message && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
         <Button type="submit" loading={loading} className="w-full">
-          {role === "dealer" ? "Dealer Account Banao" : "Account Banao"}
+          {role === "dealer" ? "Create Dealer Account" : "Create Account"}
         </Button>
       </form>
 

@@ -60,7 +60,7 @@ export function NotificationsList({ initial }: { initial: DemandNotification[] }
             <p className="mt-2 text-xs text-stone-400">{timeAgo(n.created_at)}</p>
             {n.vehicle_id && (
               <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                🚗 Car Dekho
+                🚗 View Car
               </span>
             )}
           </button>
@@ -73,7 +73,7 @@ export function NotificationsList({ initial }: { initial: DemandNotification[] }
       )}
       <div className="text-center">
         <Link href="/account" className="text-sm font-medium text-brand hover:underline">
-          ← Mera Account
+          ← My Account
         </Link>
       </div>
     </div>

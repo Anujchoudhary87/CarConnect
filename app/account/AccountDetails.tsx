@@ -23,14 +23,14 @@ export function AccountDetails({ profile, email }: { profile: UserProfile | null
   }
 
   const links = [
-    { href: "/marketplace", label: "🔍 Gaadi Kharido", desc: "Marketplace browse karo" },
+    { href: "/marketplace", label: "🔍 Find a Car", desc: "Marketplace browse karo" },
     { href: "/notifications", label: "🔔 Notifications", desc: "Stock match ke in-app updates" },
-    { href: "/sell", label: "🚗 Apni Gaadi Becho", desc: "Apni gaadi bechne ke liye list karo" },
-    { href: "/sell/my-listings", label: "📋 Meri Sell Listings", desc: "Apni listings aur offers dekho" },
-    { href: "/favorites", label: "♥️ Saved Gaadiyaan", desc: "Save ki hui gaadiyan" },
+    { href: "/sell", label: "🚗 Sell Your Car", desc: "Apni gaadi bechne ke liye list karo" },
+    { href: "/sell/my-listings", label: "📋 My Listings", desc: "Apni listings aur offers dekho" },
+    { href: "/favorites", label: "♥️ Saved Cars", desc: "Save ki hui gaadiyan" },
     ...(profile?.role === "dealer"
       ? [{ href: "/dealer", label: "🏪 Dealer Dashboard", desc: "Inventory aur enquiries" }]
-      : [{ href: "/become-dealer", label: "🏪 Dealer Bano", desc: "Dealer ban kar gaadiyan becho" }]),
+      : [{ href: "/become-dealer", label: "🏪 Become a Dealer", desc: "Dealer ban kar gaadiyan becho" }]),
     ...(profile?.is_admin ? [{ href: "/admin", label: "🛡️ Admin Panel", desc: "Manage platform" }] : []),
   ];
 
