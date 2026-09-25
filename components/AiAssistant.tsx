@@ -23,6 +23,13 @@ import {
   type AdvisorQuestion,
 } from "@/lib/advisor";
 import { AI_ASK_EVENT } from "@/components/ai-ask";
+import {
+  BuyingJourney,
+  JOURNEY_STAGE_ORDER,
+  journeyStageAt,
+  journeyStageLabel,
+  type JourneyStage,
+} from "@/components/BuyingJourney";
 
 const SUGGESTIONS = [
   "Mujhe family ke liye car chahiye",
@@ -232,10 +239,13 @@ export function AiAssistant({
   variant = "panel",
   placeholder = PLACEHOLDER,
   buttonLabel = "Recommendations Pao",
+  showHeader = true,
 }: {
   variant?: "panel" | "hero";
   placeholder?: string;
   buttonLabel?: string;
+  /** Set false when the surrounding page already renders the section heading. */
+  showHeader?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -264,6 +274,9 @@ export function AiAssistant({
   const [advisorChips, setAdvisorChips] = useState<string[]>([]);
   const [advisorActive, setAdvisorActive] = useState(false);
   const [verdict, setVerdict] = useState("");
+  // Customer-controlled position in the buying journey (auto-advanced by the
+  // advisor, walkable forward by the customer).
+  const [journeyIndex, setJourneyIndex] = useState(0);
 
   function setQuestionUI(q: AdvisorQuestion | null) {
     questionRef.current = q;
@@ -303,6 +316,7 @@ export function AiAssistant({
     setRecordId(null);
     setOptInStatus("ask");
     setOptInMsg("");
+    setJourneyIndex(0);
     const prevPending = questionRef.current?.field ?? null;
     setQuestionUI(null);
     setAssistantLine("");
@@ -535,6 +549,28 @@ export function AiAssistant({
 
   const hero = variant === "hero";
 
+  // The advisor auto-advances the journey; the customer can also walk forward
+  // once a shortlist exists.
+  const autoStage: JourneyStage = !searched || loading
+    ? "start"
+    : question
+      ? "requirement"
+      : compareName
+        ? "compare"
+        : results.length > 0
+          ? "shortlist"
+          : mode === "none"
+            ? "requirement"
+            : "start";
+  // Steps past the shortlist only unlock once live cars are on the table.
+  const maxStageIndex = results.length > 0 ? JOURNEY_STAGE_ORDER.length - 1 : 1;
+  const stage = journeyStageAt(
+    Math.min(Math.max(JOURNEY_STAGE_ORDER.indexOf(autoStage), journeyIndex), maxStageIndex),
+  );
+  const stageIndex = JOURNEY_STAGE_ORDER.indexOf(stage);
+  const journeyRequirement = requirement || advisorChips.join(" • ");
+  const canStepForward = stageIndex < maxStageIndex;
+
   return (
     <section
       id="ai-assistant"
@@ -547,7 +583,7 @@ export function AiAssistant({
             : "overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-xl shadow-stone-900/5"
         }
       >
-        {!hero && (
+        {!hero && showHeader && (
           <div className="border-b border-stone-100 bg-gradient-to-r from-red-50 to-stone-50 px-5 py-4 sm:px-7">
             <p className="text-xs font-bold uppercase tracking-wide text-brand">Conversational car discovery</p>
             <h2 className="mt-0.5 text-xl font-extrabold text-stone-900 sm:text-2xl">AI Car Advisor</h2>
@@ -610,6 +646,37 @@ export function AiAssistant({
               </button>
             ))}
           </div>
+
+          {!loading && (
+            <div className="mt-5">
+              <BuyingJourney
+                stage={stage}
+                cars={results}
+                requirement={journeyRequirement}
+                onAsk={(q) => void run(q)}
+              />
+              {stage !== "start" && (
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setJourneyIndex((i) => Math.max(0, Math.min(i, stageIndex - 1)))}
+                    className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-600 transition-colors hover:border-stone-400"
+                  >
+                    ← Pichla step
+                  </button>
+                  {canStepForward && (
+                    <button
+                      type="button"
+                      onClick={() => setJourneyIndex((i) => Math.min(maxStageIndex, i + 1))}
+                      className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:border-brand hover:text-brand"
+                    >
+                      Agla step ({journeyStageLabel(journeyStageAt(stageIndex + 1))}) →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {note && (
             <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{note}</p>

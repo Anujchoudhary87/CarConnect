@@ -10,6 +10,7 @@ import {
 } from "@/components/location-store";
 import { CarCard } from "@/components/CarCard";
 import { Carousel, type CarouselColumn } from "@/components/Carousel";
+import { RecentlyViewedSection } from "@/components/RecentlyViewedSection";
 
 const RADII = ["5", "20", "50", "100", "150", "200", "200+"];
 const NEARBY_RADIUS = "100";
@@ -58,6 +59,9 @@ export function HomeSections({
         onToggleFavorite={onToggleFavorite}
         allIndiaCars={newest}
       />
+
+      {/* Recently Viewed (anonymous local history) */}
+      <RecentlyViewedSection favState={favState} onToggleFavorite={onToggleFavorite} />
 
       {/* Recently Added */}
       {(recentlyAdded ?? newest).length > 0 && (
