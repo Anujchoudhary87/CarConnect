@@ -49,3 +49,23 @@ export async function GET() {
 
   return Response.json({ customers });
 }
+
+export async function DELETE(request: Request) {
+  const admin = await requireAdminApi();
+  if (!admin) return Response.json({ error: "Not authenticated" }, { status: 401 });
+
+  const { id } = await request.json();
+  if (!id) return Response.json({ error: "User ID required" }, { status: 400 });
+
+  if (id === admin.user.id) {
+    return Response.json({ error: "Cannot delete yourself" }, { status: 400 });
+  }
+
+  const svc = createServiceClient();
+  if (!svc) return Response.json({ error: "Service client not configured" }, { status: 500 });
+
+  const { error } = await svc.auth.admin.deleteUser(id);
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  return Response.json({ ok: true });
+}

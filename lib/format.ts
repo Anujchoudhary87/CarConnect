@@ -13,6 +13,14 @@ export function formatPriceShort(value: number | string | null | undefined): str
   return `₹${n}`;
 }
 
+// Finance-style formatting used on the car details page, e.g. ₹8.50 Lakh.
+export function formatLakh(value: number | string | null | undefined): string {
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n)) return "₹0";
+  const lakh = n / 100000;
+  return `₹${lakh.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Lakh`;
+}
+
 export function formatKm(value: number | string | null | undefined): string {
   const n = Number(value ?? 0);
   if (isNaN(n)) return "0 km";

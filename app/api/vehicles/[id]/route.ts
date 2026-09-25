@@ -20,7 +20,7 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/vehicles
 
   const { data: existing } = await supabase
     .from("vehicles")
-    .select("id")
+    .select("id, price")
     .eq("id", id)
     .eq("dealer_id", dealer.id)
     .maybeSingle();
@@ -29,6 +29,10 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/vehicles
   const body = (await request.json()) as VehicleInput;
   const err = validateInput(body);
   if (err) return Response.json({ error: err }, { status: 400 });
+
+  const oldPrice = Number(existing.price ?? 0);
+  const newPrice = Number(body.price);
+  const priceDropped = newPrice > 0 && newPrice < oldPrice;
 
   const { error } = await supabase
     .from("vehicles")
@@ -42,6 +46,9 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/vehicles
       owner: body.owner,
       transmission: body.transmission,
       price: Number(body.price),
+      down_payment: body.down_payment ?? null,
+      finance_interest_rate: body.finance_interest_rate ?? null,
+      seating_capacity: body.seating_capacity ?? null,
       city: body.city ?? "",
       description: body.description ?? "",
       lat: body.lat ?? null,
@@ -55,6 +62,21 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/vehicles
   // Replace images: delete all current, insert the new set.
   await supabase.from("vehicle_images").delete().eq("vehicle_id", id);
   const images = (body.images ?? []).filter(Boolean);
+
+  // Task 1A: price dropped → alert favouriters + opted-in matched demand customers.
+  // Runs only AFTER the price update commits, so old/new prices are reliable.
+  // Single, best-effort trigger (security-definer RPC, idempotent in SQL) —
+  // never fails the PUT.
+  if (priceDropped) {
+    await Promise.resolve(
+      supabase.rpc("notify_price_drop", {
+        p_vehicle_id: id,
+        p_old_price: oldPrice,
+        p_new_price: newPrice,
+      })
+    ).then(() => {}).catch(() => {});
+  }
+
   if (images.length > 0) {
     await supabase
       .from("vehicle_images")

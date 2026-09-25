@@ -7,7 +7,7 @@ import { StaticMap } from "@/components/StaticMap";
 import { Card, Badge } from "@/components/ui";
 import { EMICalculator } from "@/components/EMICalculator";
 import { APP_URL } from "@/lib/env";
-import { formatINR, formatKm, ownerLabel, timeAgo } from "@/lib/format";
+import { formatINR, formatKm, formatLakh, ownerLabel, timeAgo } from "@/lib/format";
 import { sortVehicleImages } from "@/lib/poster/sort";
 import { publicVehicleUrl } from "@/lib/share";
 import type { Dealer, Vehicle, VehicleImage } from "@/lib/types";
@@ -167,6 +167,9 @@ export default async function CarDetailPage({
     { label: "KM Driven", value: formatKm(car.km) },
     { label: "Fuel", value: car.fuel },
     { label: "Transmission", value: car.transmission },
+    ...(car.seating_capacity != null
+      ? [{ label: "Seating Capacity", value: `${car.seating_capacity} Seater` }]
+      : []),
     { label: "Ownership", value: ownerLabel(car.owner) },
     { label: "Variant", value: car.variant || "—" },
   ];
@@ -219,6 +222,29 @@ export default async function CarDetailPage({
           <Card className="p-5">
             <p className="text-3xl font-extrabold text-brand-dark">{formatINR(car.price)}</p>
             <p className="mt-0.5 text-xs text-stone-400">On-road price expected, dealer se confirm karein.</p>
+            {car.down_payment != null && Number.isFinite(Number(car.down_payment)) && (
+              <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
+                  ✓ Finance Available
+                </span>
+                <dl className="mt-3 space-y-1.5 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-stone-500">Price</dt>
+                    <dd className="font-semibold text-stone-800">{formatLakh(car.price)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-stone-500">Down Payment</dt>
+                    <dd className="font-semibold text-stone-800">{formatLakh(car.down_payment)}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 border-t border-emerald-100 pt-1.5">
+                    <dt className="text-stone-500">Finance Amount</dt>
+                    <dd className="font-extrabold text-emerald-800">
+                      {formatLakh(Math.max(0, Number(car.price) - Number(car.down_payment)))}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            )}
             <div className="mt-4">
               <ContactBar
                 vehicle={car}
@@ -248,7 +274,12 @@ export default async function CarDetailPage({
             </Card>
           )}
 
-          <EMICalculator amount={car.price} compact />
+          <EMICalculator
+            amount={car.price}
+            downPayment={car.down_payment ?? undefined}
+            defaultRate={car.finance_interest_rate ?? undefined}
+            compact
+          />
         </aside>
       </div>
     </div>

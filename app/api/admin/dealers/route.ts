@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { requireAdminApi } from "@/lib/auth";
-import { authUserEmails } from "@/lib/supabase/service";
+import { authUserEmails, createServiceClient } from "@/lib/supabase/service";
 
 export async function GET() {
   const admin = await requireAdminApi();
@@ -89,6 +89,26 @@ export async function PUT(request: NextRequest) {
       reviewed_at: new Date().toISOString(),
     });
   }
+
+  return Response.json({ ok: true });
+}
+
+export async function DELETE(request: NextRequest) {
+  const admin = await requireAdminApi();
+  if (!admin) return Response.json({ error: "Not authenticated" }, { status: 401 });
+
+  const { user_id } = await request.json();
+  if (!user_id) return Response.json({ error: "User ID required" }, { status: 400 });
+
+  if (user_id === admin.user.id) {
+    return Response.json({ error: "Cannot delete yourself" }, { status: 400 });
+  }
+
+  const svc = createServiceClient();
+  if (!svc) return Response.json({ error: "Service client not configured" }, { status: 500 });
+
+  const { error } = await svc.auth.admin.deleteUser(user_id);
+  if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({ ok: true });
 }

@@ -57,6 +57,9 @@ export interface Vehicle {
   owner: string;
   transmission: string;
   price: number;
+  down_payment: number | null;
+  finance_interest_rate: number | null;
+  seating_capacity: number | null;
   city: string;
   description: string;
   lat: number | null;
@@ -179,6 +182,7 @@ export interface MarketplaceFilters {
   max_year?: string;
   max_km?: string;
   owner?: string;
+  seats?: string;
   radius_km?: string;
   lat?: string;
   lng?: string;
@@ -195,6 +199,7 @@ export interface CustomerDemand {
   model: string;
   fuel: string;
   transmission: string;
+  seating_capacity: number | null;
   min_year: number | null;
   max_price: number | null;
   min_price: number | null;
@@ -215,6 +220,7 @@ export interface DemandCluster {
   brand: string;
   model: string;
   fuel: string;
+  seating_capacity: number | null;
   min_year: number | null;
   max_price: number | null;
   city: string;

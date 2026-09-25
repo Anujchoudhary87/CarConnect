@@ -12,6 +12,7 @@ export interface DemandFields {
   model: string;
   fuel: string;
   transmission: string;
+  seatingCapacity: number | null;
   minYear: number | null;
   maxPrice: number | null;
   minPrice: number | null;
@@ -56,18 +57,67 @@ const BRAND_STOP = new Set([
   "cars", "budget", "max", "minimum", "around", "me", "aas", "paas", "neighbourhood",
 ]);
 
-// Best-effort brand + first model token extraction from a free-text requirement.
+// Words that clearly are NOT a car-model name. Only consulted when a query has
+// no brand, so "Honda City" still parses model="city" via the brand branch.
+const MODEL_STOP = new Set([
+  "below", "less", "upto", "till", "within", "or", "with", "the", "a", "an", "any", "new", "newer",
+  "used", "ka", "ki", "ke", "se", "mein", "chahiye", "chahta", "chahti", "hain", "hai", "wala",
+  "wali", "wale", "car", "cars", "vehicle", "vehicles", "budget", "max", "minimum", "lakh", "lac",
+  "lakhs", "crore", "cr", "rupees", "rs", "tak", "like", "need", "want", "looking", "best", "good",
+  "great", "nice", "safe", "my", "i", "petrol", "diesel", "cng", "electric", "ev", "hybrid", "lpg",
+  "automatic", "auto", "manual", "amt", "cvt", "dct", "suv", "suvs", "sedan", "sedans", "hatchback",
+  "hatchbacks", "mpv", "mpvs", "crossover", "crossovers", "luxury", "sports", "family", "city",
+  "use", "liye", "kaam", "seater", "seat", "seats", "seating", "sitting", "passenger", "passengers",
+  "people", "persons", "person", "km", "kms", "owner", "owners", "baad", "before", "aur", "ya",
+  "ek", "do", "teen", "donon", "sasta", "sasti", "mehanga", "mehangi", "zyada", "jada", "kam",
+  "dikhhao", "show", "nearest", "compare", "comparison", "difference", "between", "look", "suggest",
+  "recommend", "recommendation", "sahi", "exact", "better", "price", "prices", "in", "on", "at",
+  "as", "so", "very", "quite", "both", "one", "two", "three", "first", "second", "third",
+]);
+
+// Normalize free text for model/spec matching: lowercase, strip ₹/commas, collapse whitespace.
+export function normalizePhrase(s: string): string {
+  return s.toLowerCase().replace(/[₹,]/g, "").replace(/\s+/g, " ").trim();
+}
+
+// True when `phrase` appears in `text` on word boundaries (never as a substring of a longer word).
+export function matchesPhrase(text: string, phrase: string): boolean {
+  if (!phrase) return false;
+  const i = text.indexOf(phrase);
+  if (i < 0) return false;
+  const isWord = (c: string | undefined) => typeof c === "string" && /[a-z0-9]/.test(c);
+  const prev = i === 0 ? undefined : text[i - 1];
+  const end = i + phrase.length;
+  const next = end >= text.length ? undefined : text[end];
+  return !isWord(prev) && !isWord(next);
+}
+
+// Best-effort brand + model extraction from a free-text requirement.
+// - With a brand: first meaningful token after the brand (existing behavior).
+// - Without a brand: the first plausible model token ("Thar", "Ciaz", "2022 Thar diesel").
+//   Broad/generic words are ignored so "petrol SUV", "family car", etc. stay brand-agnostic.
 export function parseBrandModel(q: string): { brand: string; model: string } {
-  const lower = q.toLowerCase();
+  const clean = normalizePhrase(q);
+  const lower = clean;
   const brand = BRANDS.find((b) => lower.includes(b.trim().toLowerCase())) ?? "";
-  if (!brand) return { brand: "", model: "" };
-  const idx = lower.indexOf(brand.toLowerCase());
-  const rest = q.slice(idx + brand.length).replace(/[,:.()]/g, " ").trim();
-  const first = (rest.split(/\s+/)[0] ?? "").replace(/[^a-zA-Z0-9\-]/g, "");
-  if (!first || first.length < 2 || BRAND_STOP.has(first.toLowerCase()) || /^20\d{2}$/.test(first)) {
-    return { brand, model: "" };
+  if (brand) {
+    const idx = lower.indexOf(brand.toLowerCase());
+    const rest = clean.slice(idx + brand.length).replace(/[,:.()]/g, " ").trim();
+    const first = (rest.split(/\s+/)[0] ?? "").replace(/[^a-zA-Z0-9\-]/g, "");
+    if (!first || first.length < 2 || BRAND_STOP.has(first.toLowerCase()) || /^20\d{2}$/.test(first)) {
+      return { brand, model: "" };
+    }
+    return { brand, model: first };
   }
-  return { brand, model: first };
+  for (const raw of clean.split(/\s+/)) {
+    const t = raw.replace(/[^a-zA-Z0-9]/g, "");
+    if (!t || t.length < 2) continue;
+    if (/^20\d{2}$/.test(t)) continue;
+    if (/^\d/.test(t)) continue;
+    if (BRAND_STOP.has(t) || MODEL_STOP.has(t)) continue;
+    return { brand, model: t };
+  }
+  return { brand, model: "" };
 }
 
 export function fingerprintOf(f: DemandFields): string {
@@ -77,6 +127,7 @@ export function fingerprintOf(f: DemandFields): string {
     f.model.trim().toLowerCase(),
     f.fuel.trim().toLowerCase(),
     f.transmission.trim().toLowerCase(),
+    f.seatingCapacity ? String(f.seatingCapacity) : "",
     f.minYear ? String(f.minYear) : "",
     b.high ? String(b.high) : "",
     f.minPrice ? String(Math.round(f.minPrice / 100000)) : "",
@@ -91,6 +142,8 @@ export function clusterKeyOf(f: DemandFields): string {
     f.brand.trim().toLowerCase() || "any",
     f.model.trim().toLowerCase() || "any",
     f.fuel.trim().toLowerCase() || "any",
+    f.transmission.trim().toLowerCase() || "any",
+    f.seatingCapacity ? String(f.seatingCapacity) : "any",
     f.minYear ? String(f.minYear) : "any",
     priceBucketKey(b) || "any",
     city || "allindia",
@@ -99,7 +152,7 @@ export function clusterKeyOf(f: DemandFields): string {
 
 export function isMeaningful(f: DemandFields): boolean {
   return Boolean(
-    f.brand || f.model || f.fuel || f.transmission || f.minYear || f.maxPrice,
+    f.brand || f.model || f.fuel || f.transmission || f.seatingCapacity || f.minYear || f.maxPrice,
   );
 }
 

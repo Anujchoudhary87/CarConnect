@@ -6,7 +6,7 @@ import { CarCard } from "@/components/CarCard";
 import { Button, Input, Select, Spinner } from "@/components/ui";
 import { BRANDS, FUELS, TRANSMISSIONS, OWNERS, DISTANCE_OPTIONS, yearOptions } from "@/lib/constants";
 import { cn } from "@/components/ui";
-import { getStoredLocation, LOCATION_EVENT, locateFromBrowser } from "@/components/location-store";
+import { getStoredLocation, LOCATION_EVENT } from "@/components/location-store";
 import { parseBrandModel, recordDemand } from "@/lib/demand";
 
 const MAX_KM_OPTIONS = [
@@ -26,6 +26,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
   const [fuel, setFuel] = useState(initial?.fuel ?? "");
   const [transmission, setTransmission] = useState(initial?.transmission ?? "");
   const [owner, setOwner] = useState(initial?.owner ?? "");
+  const [seats, setSeats] = useState(initial?.seats ?? "");
   const [minLakh, setMinLakh] = useState(
     initial?.min_price ? String(parseFloat(initial.min_price) / 100000) : "",
   );
@@ -36,12 +37,14 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
   const [maxYear, setMaxYear] = useState(initial?.max_year ?? "");
   const [maxKm, setMaxKm] = useState(initial?.max_km ?? "");
   const [radius, setRadius] = useState(initial?.radius_km ?? "");
-  const [sort, setSort] = useState(initial?.sort ?? "distance");
-  const [loc, setLoc] = useState<{ lat: number; lng: number; label: string } | null>(() =>
-    initial?.lat && initial?.lng
-      ? { lat: parseFloat(initial.lat), lng: parseFloat(initial.lng), label: "Your search location" }
-      : getStoredLocation(),
-  );
+  const initLoc = (() => {
+    if (initial?.lat && initial?.lng) {
+      return { lat: parseFloat(initial.lat), lng: parseFloat(initial.lng), label: "Your search location" };
+    }
+    return getStoredLocation();
+  })();
+  const [sort, setSort] = useState(initial?.sort ?? (initLoc ? "distance" : "newest"));
+  const [loc, setLoc] = useState<{ lat: number; lng: number; label: string } | null>(initLoc);
   const [locating, setLocating] = useState(false);
 
   const [vehicles, setVehicles] = useState<VehicleWithInfo[]>([]);
@@ -56,6 +59,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
     if (fuel) params.set("fuel", fuel);
     if (transmission) params.set("transmission", transmission);
     if (owner) params.set("owner", owner);
+    if (seats) params.set("seats", seats);
     if (minLakh) params.set("min_price", String(Math.round(parseFloat(minLakh) * 100000)));
     if (maxLakh) params.set("max_price", String(Math.round(parseFloat(maxLakh) * 100000)));
     if (minYear) params.set("min_year", minYear);
@@ -68,7 +72,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
     }
     params.set("sort", sort);
     return params.toString();
-  }, [q, brand, fuel, transmission, owner, minLakh, maxLakh, minYear, maxYear, maxKm, loc, radius, sort]);
+  }, [q, brand, fuel, transmission, owner, seats, minLakh, maxLakh, minYear, maxYear, maxKm, loc, radius, sort]);
 
   const getLocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -87,16 +91,16 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
   const locRef = useRef(loc?.label ?? "");
   useEffect(() => {
     locRef.current = loc?.label ?? "";
-    if (!loc) {
-      (async () => {
-        const located = await locateFromBrowser();
-        if (located) setLoc(located);
-      })();
-    }
 
     const onLoc = (e: Event) => {
-      const d = (e as CustomEvent<{ lat: number; lng: number; label: string }>).detail;
-      if (d && typeof d.lat === "number" && typeof d.lng === "number") setLoc(d);
+      const d = (e as CustomEvent<{ lat: number; lng: number; label: string } | null>).detail;
+      if (d && typeof d.lat === "number" && typeof d.lng === "number") {
+        setLoc(d);
+        setRadius((r) => r || "100");
+      } else {
+        setLoc(null);
+        setRadius("");
+      }
     };
     window.addEventListener(LOCATION_EVENT, onLoc);
     return () => window.removeEventListener(LOCATION_EVENT, onLoc);
@@ -115,7 +119,9 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
         if (!res.ok) throw new Error(data.error ?? "Cars load nahi hui");
         const fresh = data.vehicles ?? [];
         setVehicles(fresh);
-        if (Array.isArray(data.brands) && data.brands.length > 0) setBrands(data.brands);
+        if (Array.isArray(data.brands)) {
+          setBrands(Array.from(new Set([...BRANDS, ...data.brands])).sort());
+        }
 
         // Record anonymous demand when a brand-specific search returns nothing.
         if (fresh.length === 0) {
@@ -126,7 +132,9 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
           };
           const int = (k: string) => {
             const v = params.get(k);
-            return v ? parseInt(v, 10) : null;
+            if (!v) return null;
+            const n = Number(v);
+            return Number.isInteger(n) ? n : null;
           };
           const qRaw = params.get("q") ?? "";
           const { brand: qBrand, model: qModel } = parseBrandModel(qRaw);
@@ -142,6 +150,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
               model: qModel || "",
               fuel: params.get("fuel") ?? "",
               transmission: params.get("transmission") ?? "",
+              seatingCapacity: int("seats"),
               minYear: int("min_year"),
               maxPrice: num("max_price"),
               minPrice: num("min_price"),
@@ -169,7 +178,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
     setVehicles((prev) => prev.map((v) => (v.id === car.id ? { ...v, is_favorite: favorite } : v)));
   }
 
-  const hasFilters = q || brand || fuel || transmission || owner || minLakh || maxLakh || minYear || maxYear || maxKm;
+  const hasFilters = q || brand || fuel || transmission || owner || seats || minLakh || maxLakh || minYear || maxYear || maxKm;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -225,6 +234,19 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
                   <option key={t} value={t}>{t}</option>
                 ))}
               </Select>
+            </div>
+            <div>
+              <label htmlFor="marketplaceSeats" className="mb-1 block text-xs font-medium text-stone-500">Seating Capacity</label>
+              <Input
+                id="marketplaceSeats"
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                value={seats}
+                onChange={(e) => setSeats(e.target.value)}
+                placeholder="Any"
+              />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-stone-500">Owner</label>
@@ -324,7 +346,7 @@ export function Marketplace({ initial }: { initial?: Record<string, string> }) {
               Try karo: filters hatao, radius badhao, ya location on karo. Naye listings roz aati hain.
             </p>
             <Button variant="outline" className="mt-4" onClick={() => {
-              setQ(""); setBrand(""); setFuel(""); setTransmission(""); setMinLakh(""); setMaxLakh(""); setMinYear(""); setMaxYear(""); setMaxKm(""); setRadius("");
+              setQ(""); setBrand(""); setFuel(""); setTransmission(""); setOwner(""); setSeats(""); setMinLakh(""); setMaxLakh(""); setMinYear(""); setMaxYear(""); setMaxKm(""); setRadius("");
             }}>
               Clear All Filters
             </Button>

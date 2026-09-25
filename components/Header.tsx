@@ -12,6 +12,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 const NAV_LINKS = [
   { href: "/", label: "Home", exact: true },
   { href: "/marketplace", label: "Find Cars" },
+  { href: "/ai-advisor", label: "AI Car Advisor" },
   { href: "/sell", label: "Sell Your Car" },
   { href: "/emi-calculator", label: "EMI Calculator" },
   { href: "/about", label: "About" },
@@ -99,7 +100,7 @@ export function Header() {
               </Link>
               <Link
                 href="/auth/login?role=dealer"
-                className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-dark"
+                className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
               >
                 🏪 Dealer Login
               </Link>

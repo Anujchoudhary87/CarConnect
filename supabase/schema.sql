@@ -190,13 +190,19 @@ create table public.vehicles (
   owner text not null default '1st' check (owner in ('1st', '2nd', '3rd', '4th')),
   transmission text not null default 'Manual' check (transmission in ('Manual', 'Automatic', 'AMT', 'CVT', 'DCT')),
   price numeric(12, 2) not null check (price >= 0),
+  down_payment numeric(12, 2) check (down_payment >= 0),
+  finance_interest_rate numeric(4, 2) check (finance_interest_rate >= 0 and finance_interest_rate <= 30),
+  seating_capacity integer check (seating_capacity is null or seating_capacity > 0),
   city text default '',
   description text default '',
   lat double precision,
   lng double precision,
   status text not null default 'pending' check (status in ('pending', 'active', 'sold', 'rejected')),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- finance_amount is never stored — it is always derived as (price - down_payment),
+  -- and a down_payment can never exceed the price, so the derived amount is >= 0.
+  constraint vehicles_down_payment_le_price check (down_payment is null or down_payment <= price)
 );
 
 create index vehicles_dealer_idx on public.vehicles (dealer_id);
@@ -209,6 +215,11 @@ create index vehicles_year_idx on public.vehicles (year);
 create index vehicles_fuel_idx on public.vehicles (fuel);
 create index vehicles_lat_idx on public.vehicles (lat);
 create index vehicles_lng_idx on public.vehicles (lng);
+create index vehicles_seating_idx on public.vehicles (seating_capacity);
+
+alter table public.vehicles
+  add column if not exists seating_capacity integer
+    check (seating_capacity is null or seating_capacity > 0);
 
 alter table public.vehicles enable row level security;
 
@@ -470,6 +481,7 @@ create table public.customer_demands (
   model text not null default '',
   fuel text not null default '',
   transmission text not null default '',
+  seating_capacity integer check (seating_capacity is null or seating_capacity > 0),
   min_year integer check (min_year between 1980 and 2100),
   max_price numeric(14, 2) check (max_price >= 0),
   min_price numeric(14, 2) check (min_price >= 0),
@@ -518,6 +530,7 @@ returns table (
   brand text,
   model text,
   fuel text,
+  seating_capacity integer,
   min_year integer,
   max_price numeric,
   city text,
@@ -532,6 +545,7 @@ as $$
     max(d.brand)::text as brand,
     max(d.model)::text as model,
     max(d.fuel)::text as fuel,
+    max(d.seating_capacity)::integer as seating_capacity,
     min(d.min_year)::integer as min_year,
     max(d.max_price)::numeric as max_price,
     max(d.city)::text as city,
@@ -557,6 +571,13 @@ $$;
 
 alter table public.customer_demands
   add column if not exists notify boolean not null default false;
+
+alter table public.customer_demands
+  add column if not exists seating_capacity integer
+    check (seating_capacity is null or seating_capacity > 0);
+
+create index if not exists customer_demands_seating_idx
+  on public.customer_demands (seating_capacity);
 
 -- Vehicle ↔ demand matches. Dealer availability is NOT derived from these rows
 -- (it is counted live from active inventory); this table only powers customer
@@ -633,6 +654,7 @@ as $$
     and (d.model = '' or v.model ilike '%' || d.model || '%')
     and (d.fuel = '' or lower(v.fuel) = lower(d.fuel))
     and (d.transmission = '' or lower(v.transmission) = lower(d.transmission))
+    and (d.seating_capacity is null or (v.seating_capacity is not null and v.seating_capacity = d.seating_capacity))
     and (d.min_year is null or v.year >= d.min_year)
     and (d.min_price is null or v.price >= d.min_price)
     and (d.max_price is null or v.price <= d.max_price)
@@ -720,3 +742,243 @@ begin
   return created_notifications;
 end;
 $$;
+
+
+-- =============================================================
+-- CUSTOMER ALERTS (price-drop / sold) + DEALER FOLLOW-UPS
+-- Additive only. Reuses customer_notifications for both in-app
+-- notifications AND dealer daily follow-up digests (user_id column
+-- already supports any auth user, dealers included).
+-- =============================================================
+
+-- ---------- Task 1: price-drop notification ----------
+-- Fired from PUT /api/vehicles/[id] whenever a vehicle price is reduced.
+-- Notifies (idempotently, per user+vehicle): everyone who favourited the
+-- vehicle, plus opted-in customers whose open demand matches the vehicle.
+-- Best-effort — a notification failure never fails the price update.
+-- Drop the old 2-arg signature first so re-applying this file never leaves a
+-- stale overload behind.
+drop function if exists public.notify_price_drop(uuid, numeric);
+create or replace function public.notify_price_drop(
+  p_vehicle_id uuid,
+  p_old_price numeric,
+  p_new_price numeric
+)
+returns integer
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_targets uuid[];
+  created_notifications integer := 0;
+begin
+  -- Only run when the price actually dropped and the car is still active.
+  if p_old_price is null or p_new_price is null or p_new_price >= p_old_price then
+    return 0;
+  end if;
+
+  -- 1) customers who favourited this vehicle
+  select coalesce(array_agg(distinct f.user_id), '{}'::uuid[])
+    into v_targets
+  from public.favorites f
+  where f.vehicle_id = p_vehicle_id;
+
+  -- 2) opted-in customers whose open demand matches this vehicle
+  select v_targets || coalesce(array_agg(distinct d.user_id), '{}'::uuid[])
+    into v_targets
+  from public.customer_demands d
+  where d.notify = true
+    and public.demand_vehicle_match(p_vehicle_id, d.id);
+
+  if cardinality(v_targets) = 0 then
+    return 0;
+  end if;
+
+  with inserted as (
+    insert into public.customer_notifications (
+      user_id, type, demand_id, vehicle_id, title, message
+    )
+    select
+      t.user_id,
+      'price_drop',
+      null,
+      p_vehicle_id,
+      '😍 Price drop!',
+      (
+        select 'Aapki pasand ki gaadi ka price kam hua hai — '
+               || concat_ws(' ', v.brand, v.model, v.variant)
+               || ' ab '
+               || trim(trailing '.' from trim(trailing '0' from to_char(p_new_price / 100000, 'FM999999990.9')))
+               || 'L mein available hai.'
+        from public.vehicles v
+        where v.id = p_vehicle_id
+      )
+    from unnest(v_targets) as t(user_id)
+    where not exists (
+      select 1 from public.customer_notifications n
+      where n.user_id = t.user_id
+        and n.vehicle_id = p_vehicle_id
+        and n.type = 'price_drop'
+        and n.read_at is null
+    )
+    on conflict do nothing
+    returning 1
+  )
+  select count(*) into created_notifications from inserted;
+
+  return created_notifications;
+end;
+$$;
+
+-- ---------- Task 1: sold notification ----------
+-- Fired from POST /api/vehicles/[id]/status when a vehicle is marked sold.
+-- Notifies (idempotently) favouriters + opted-in matched-demand customers.
+create or replace function public.notify_vehicle_sold(
+  p_vehicle_id uuid
+)
+returns integer
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_targets uuid[];
+  created_notifications integer := 0;
+begin
+  -- favouriters
+  select coalesce(array_agg(distinct f.user_id), '{}'::uuid[])
+    into v_targets
+  from public.favorites f
+  where f.vehicle_id = p_vehicle_id;
+
+  -- opted-in matched demands
+  select v_targets || coalesce(array_agg(distinct d.user_id), '{}'::uuid[])
+    into v_targets
+  from public.customer_demands d
+  where d.notify = true
+    and public.demand_vehicle_match(p_vehicle_id, d.id);
+
+  if cardinality(v_targets) = 0 then
+    return 0;
+  end if;
+
+  with inserted as (
+    insert into public.customer_notifications (
+      user_id, type, demand_id, vehicle_id, title, message
+    )
+    select
+      t.user_id,
+      'sold',
+      null,
+      p_vehicle_id,
+      '😢 Ye gaadi bik gayi',
+      (
+        select 'Aapki pasand ki gaadi '
+               || (select concat_ws(' ', v.brand, v.model)
+                     from public.vehicles v where v.id = p_vehicle_id)
+               || ' ab sold ho gayi hai. Naye stock ke liye notification on rakho.'
+      )
+    from unnest(v_targets) as t(user_id)
+    where not exists (
+      select 1 from public.customer_notifications n
+      where n.user_id = t.user_id
+        and n.vehicle_id = p_vehicle_id
+        and n.type = 'sold'
+        and n.read_at is null
+    )
+    on conflict do nothing
+    returning 1
+  )
+  select count(*) into created_notifications from inserted;
+
+  return created_notifications;
+end;
+$$;
+
+-- ---------- Task 2: dealer follow-up column (additive) ----------
+-- Canonical interaction record is public.enquiries. followup_choice stores the
+-- dealer's lightweight decision so the dealer dashboard can show "Aaj call
+-- karne hain (N)" and the daily digest. Additive — no existing column touched.
+alter table public.enquiries
+  add column if not exists followup_choice text
+    default null
+    check (followup_choice is null or followup_choice in ('interested','baad_mein','nahi_banega','aa_raha_hoon'));
+alter table public.enquiries
+  add column if not exists next_followup_at timestamptz default null;
+
+create index if not exists enquiries_followup_idx
+  on public.enquiries (dealer_id, next_followup_at);
+
+-- ---------- Task 2: daily dealer digest ----------
+-- Security-definer: creates (idempotently, one per dealer per UTC day) a single
+-- notification summarising today's due follow-ups. Reuses customer_notifications
+-- (user_id = the dealer's auth user id). Empty / no-due → no notification.
+create or replace function public.sync_dealer_followup_digest(
+  p_dealer_id uuid
+)
+returns integer
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_due integer;
+  v_day_start timestamptz;
+  v_created integer := 0;
+begin
+  select user_id into v_user_id
+  from public.dealers where id = p_dealer_id;
+
+  if v_user_id is null then
+    return 0;
+  end if;
+
+  v_day_start := date_trunc('day', now());
+
+  -- due = follow-ups scheduled at-or-before end of today that aren't a
+  -- "nahi_banega" (cancelled). Null next_followup_at = nothing to do.
+  select count(*) into v_due
+  from public.enquiries e
+  where e.dealer_id = p_dealer_id
+    and e.next_followup_at is not null
+    and e.followup_choice <> 'nahi_banega'
+    and e.next_followup_at < v_day_start + interval '1 day';
+
+  -- One digest per dealer per day. Never duplicate.
+  if v_due > 0 and not exists (
+    select 1 from public.customer_notifications n
+    where n.user_id = v_user_id
+      and n.type = 'followup_digest'
+      and n.created_at >= v_day_start
+      and n.created_at < v_day_start + interval '1 day'
+  ) then
+    insert into public.customer_notifications (user_id, type, title, message)
+    values (
+      v_user_id,
+      'followup_digest',
+      '📞 Aaj ' || v_due || ' follow-up call',
+      'Aaj ' || v_due || ' customer ka follow-up pending hai. Turant call karo — sales badhani hai!'
+    );
+    v_created := 1;
+  end if;
+
+  return v_created;
+end;
+$$;
+
+-- The daily digest cron (/api/cron/followup-digest) invokes this function via
+-- the service-role client (server-only key, never exposed to the browser).
+-- Granting EXECUTE to service_role follows the existing privileged-path
+-- pattern in this schema and does not reopen any public path — PUBLIC execute
+-- was revoked above and only 'authenticated' + 'service_role' can call it.
+grant execute on function public.sync_dealer_followup_digest(uuid) to service_role;
+
+-- ---------- Task 1/2: widen the notification type CHECK ----------
+-- customer_notifications.type was created as check (type in
+-- ('stock_match', 'manual')). Task 1 (price_drop, sold) and Task 2
+-- (followup_digest) store additional types, so the inline column CHECK
+-- (auto-named customer_notifications_type_check) must be replaced.
+-- Additive only: the table is never dropped/recreated and the original
+-- types stay valid.
+alter table public.customer_notifications
+  drop constraint if exists customer_notifications_type_check;
+
+alter table public.customer_notifications
+  add constraint customer_notifications_type_check
+  check (type in ('stock_match', 'manual', 'price_drop', 'sold', 'followup_digest'));

@@ -31,6 +31,7 @@ export async function countMatchingVehicles(supabase: AnyClient, cluster: Demand
   if (cluster.brand) q = q.ilike("brand", cluster.brand);
   if (cluster.model) q = q.ilike("model", `%${cluster.model}%`);
   if (cluster.fuel) q = q.ilike("fuel", cluster.fuel);
+  if (cluster.seating_capacity != null) q = q.eq("seating_capacity", cluster.seating_capacity);
   if (cluster.min_year) q = q.gte("year", cluster.min_year);
   if (cluster.max_price != null) q = q.lte("price", cluster.max_price);
   const { count } = await q;

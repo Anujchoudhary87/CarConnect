@@ -15,6 +15,7 @@ import {
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
 import { BRANDS, FUELS, OWNERS, TRANSMISSIONS, yearOptions } from "@/lib/constants";
+import { formatINR } from "@/lib/format";
 
 interface CarFormProps {
   initial?: { vehicle: Vehicle; images: string[] };
@@ -35,6 +36,9 @@ export function CarForm({ initial }: CarFormProps) {
     owner: v?.owner ?? "",
     transmission: v?.transmission ?? "",
     price: v?.price?.toString() ?? "",
+    downPayment: v?.down_payment?.toString() ?? "",
+    financeRate: v?.finance_interest_rate?.toString() ?? "",
+    seatingCapacity: v?.seating_capacity?.toString() ?? "",
     city: v?.city ?? "",
     description: v?.description ?? "",
   });
@@ -51,6 +55,14 @@ export function CarForm({ initial }: CarFormProps) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    const seatingText = form.seatingCapacity.trim();
+    const seatingCapacity = seatingText === "" ? null : Number(seatingText);
+    if (seatingCapacity !== null && (!Number.isInteger(seatingCapacity) || seatingCapacity < 1)) {
+      setError("Seating capacity positive whole number hona chahiye.");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -58,6 +70,9 @@ export function CarForm({ initial }: CarFormProps) {
         year: Number(form.year),
         km: Number(form.km),
         price: Number(form.price),
+        down_payment: form.downPayment.trim() === "" ? null : Number(form.downPayment),
+        finance_interest_rate: form.financeRate.trim() === "" ? null : Number(form.financeRate),
+        seating_capacity: seatingCapacity,
         lat,
         lng,
         images,
@@ -144,9 +159,58 @@ export function CarForm({ initial }: CarFormProps) {
             <Input id="price" type="number" required min={0} step={1000} value={form.price} onChange={set("price")} placeholder="550000" />
           </div>
           <div>
+            <Label htmlFor="downPayment">Down Payment (₹)</Label>
+            <Input id="downPayment" type="number" min={0} step={1000} value={form.downPayment} onChange={set("downPayment")} placeholder="150000" />
+          </div>
+          <div>
+            <Label htmlFor="financeRate">Finance Interest Rate (%)</Label>
+            <Input id="financeRate" type="number" min={0} max={30} step={0.05} value={form.financeRate} onChange={set("financeRate")} placeholder="10" />
+            <p className="mt-1 text-[11px] text-stone-400">
+              Optional — EMI calculator pe default rate ke roop mein dikhega. Customer change kar sakta hai.
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="seatingCapacity" hint="Optional">Seating Capacity</Label>
+            <Input
+              id="seatingCapacity"
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              value={form.seatingCapacity}
+              onChange={set("seatingCapacity")}
+              placeholder="e.g. 5, 7"
+              aria-describedby="seatingCapacityHelp"
+            />
+            <p id="seatingCapacityHelp" className="mt-1 text-[11px] text-stone-400">
+              Positive whole number only, jaise 5, 7, 13 ya 15.
+            </p>
+          </div>
+          <div>
             <Label htmlFor="city">City</Label>
             <Input id="city" value={form.city} onChange={set("city")} placeholder="Jaipur" />
           </div>
+          {(() => {
+            const priceNum = Number(form.price);
+            const downNum = form.downPayment.trim() === "" ? null : Number(form.downPayment);
+            const hasPrice = Number.isFinite(priceNum) && priceNum > 0;
+            const hasDown = downNum !== null && Number.isFinite(downNum);
+            if (hasPrice && hasDown && downNum! > priceNum) {
+              return (
+                <p className="sm:col-span-2 text-xs font-medium text-red-600">
+                  Down payment vehicle price se zyada nahi ho sakta.
+                </p>
+              );
+            }
+            if (hasPrice && hasDown && downNum! >= 0) {
+              return (
+                <p className="sm:col-span-2 text-xs text-emerald-700">
+                  Finance Amount: {formatINR(priceNum - downNum!)} (Price − Down Payment, automatically calculated)
+                </p>
+              );
+            }
+            return null;
+          })()}
           <div className="sm:col-span-2">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" rows={3} value={form.description} onChange={set("description")} placeholder="Condition, service history, koi kaam baaki…" />

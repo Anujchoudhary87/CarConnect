@@ -1,6 +1,18 @@
 import { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { runDemandMatching } from "@/lib/demand-api";
+
+// Task 1 wire-up: mark sold → best-effort alert favouriters + opted-in
+// matched demand. notify_vehicle_sold is idempotent in SQL, and this route
+// must never fail the actual status change.
+async function notifySold(supabase: Pick<SupabaseClient, "rpc">, vehicleId: string) {
+  try {
+    await supabase.rpc("notify_vehicle_sold", { p_vehicle_id: vehicleId });
+  } catch {
+    // best-effort only
+  }
+}
 
 export async function POST(request: NextRequest, ctx: RouteContext<"/api/vehicles/[id]/status">) {
   const { id } = await ctx.params;
@@ -36,8 +48,10 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/vehicle
     .eq("id", id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  // Relisted as active → stock is available again, so match waiting demand.
-  if (status === "active") {
+  if (status === "sold") {
+    await notifySold(supabase, id);
+  } else if (status === "active") {
+    // Relisted as active → stock is available again, so match waiting demand.
     await runDemandMatching(supabase, id).catch(() => {});
   }
 

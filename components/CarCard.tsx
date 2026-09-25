@@ -10,9 +10,11 @@ import { distanceLabel } from "@/lib/geo";
 export function CarCard({
   car,
   onToggleFavorite,
+  badge,
 }: {
   car: VehicleWithInfo;
   onToggleFavorite?: (car: VehicleWithInfo, favorite: boolean) => void;
+  badge?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const router = useRouter();
@@ -43,25 +45,47 @@ export function CarCard({
     }
   }
 
+  const specs = [
+    String(car.year),
+    car.fuel,
+    formatKm(car.km),
+    car.transmission,
+    ownerLabel(car.owner),
+  ].filter(Boolean);
+
   return (
     <Link
       href={`/cars/${car.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
+      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-stone-100 to-stone-200">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={image}
             alt={`${car.brand} ${car.model}`}
-            className="h-full w-full object-contain"
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-4xl">🚗</div>
+          <div className="flex h-full items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/car-placeholder.svg"
+              alt=""
+              aria-hidden
+              className="size-16 opacity-50"
+            />
+          </div>
+        )}
+        {badge && (
+          <span className="absolute left-2 top-2 rounded-full bg-brand px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow">
+            {badge}
+          </span>
         )}
         {car.distance_km != null && (
           <span className="absolute bottom-2 left-2 rounded-full bg-stone-900/80 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur">
-            📍 {distanceLabel(car.distance_km)}
+            📍 {distanceLabel(car.distance_km)} away
           </span>
         )}
         {onToggleFavorite && car.is_favorite !== undefined && (
@@ -69,7 +93,7 @@ export function CarCard({
             onClick={toggleFavorite}
             disabled={busy}
             className="absolute right-2 top-2 rounded-full bg-white/90 p-2 shadow transition-transform hover:scale-110"
-            aria-label="Save car"
+            aria-label={car.is_favorite ? "Remove from saved cars" : "Save car"}
           >
             <svg
               viewBox="0 0 24 24"
@@ -83,23 +107,38 @@ export function CarCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-3">
+      <div className="flex flex-1 flex-col p-3.5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold leading-tight text-stone-900">
+          <h3 className="line-clamp-1 font-bold leading-snug text-stone-900">
             {car.brand} {car.model}
-            {car.variant && <span className="text-sm font-normal text-stone-500"> {car.variant}</span>}
+            {car.variant && (
+              <span className="font-normal text-stone-500"> {car.variant}</span>
+            )}
           </h3>
         </div>
-        <p className="mt-1 text-lg font-extrabold text-brand-dark">{formatPriceShort(car.price)}</p>
-        <p className="mt-1 truncate text-xs text-stone-500">
-          {car.year} · {formatKm(car.km)} · {car.fuel} · {ownerLabel(car.owner)}
+        <p className="mt-1 text-lg font-extrabold tracking-tight text-brand-dark">
+          {formatPriceShort(car.price)}
         </p>
-        <div className="mt-2 flex items-center justify-between gap-2 border-t border-stone-100 pt-2 text-xs text-stone-500">
-          <span className="flex items-center gap-1 truncate">
-            {car.dealer?.verified && <span className="text-emerald-600">✓</span>}
-            <span className="truncate">{car.dealer?.dealership_name ?? "Dealer"}</span>
+        <p className="mt-1 line-clamp-1 text-xs text-stone-500">{specs.join(" • ")}</p>
+
+        <div className="min-h-3 flex-1" />
+
+        <div className="flex items-center justify-between gap-2 border-t border-stone-100 pt-2.5">
+          <span className="flex min-w-0 items-center gap-1 text-xs text-stone-600">
+            <span aria-hidden>📍</span>
+            <span className="truncate">{car.city || "India"}</span>
+            {car.dealer?.verified && (
+              <span
+                className="ml-1 shrink-0 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
+                title="Verified dealer"
+              >
+                ✓ Verified
+              </span>
+            )}
           </span>
-          <span className="shrink-0">{car.city || ""}</span>
+          <span className="shrink-0 text-xs font-bold text-brand transition-colors group-hover:text-brand-dark">
+            View Car →
+          </span>
         </div>
       </div>
     </Link>

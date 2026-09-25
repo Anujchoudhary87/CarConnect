@@ -19,13 +19,14 @@ export async function GET(request: NextRequest) {
       lat: string;
       lon: string;
       display_name: string;
-      address?: { city?: string; town?: string; village?: string; county?: string; state?: string };
+      address?: { city?: string; town?: string; village?: string; county?: string; district?: string; state?: string };
     }>;
     const results = data.map((r) => ({
       lat: parseFloat(r.lat),
       lng: parseFloat(r.lon),
       label: r.display_name,
       city: r.address?.city || r.address?.town || r.address?.village || r.address?.county || "",
+      district: r.address?.district || r.address?.county || "",
       state: r.address?.state || "",
     }));
     return Response.json({ results });

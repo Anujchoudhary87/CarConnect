@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       lng: parseFloat(lng),
       label: data.display_name ?? "",
       city: data.address?.city || data.address?.town || data.address?.village || data.address?.county || "",
+      district: data.address?.district || data.address?.county || "",
       state: data.address?.state || "",
     });
   } catch (e) {

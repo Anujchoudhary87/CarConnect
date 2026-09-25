@@ -8,8 +8,9 @@ const DAILY_CAP = 30;
 const DEDUPE_HOURS = 24;
 
 function intOrNull(v: unknown): number | null {
-  const n = typeof v === "string" ? parseInt(v, 10) : typeof v === "number" ? Math.round(v) : NaN;
-  return Number.isFinite(n) ? n : null;
+  if (typeof v === "number") return Number.isInteger(v) ? v : null;
+  if (typeof v === "string" && /^-?\d+$/.test(v.trim())) return Number(v);
+  return null;
 }
 
 function numOrNull(v: unknown): number | null {
@@ -30,7 +31,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("customer_demands")
     .select(
-      "id, source, brand, model, fuel, transmission, min_year, max_price, min_price, city, status, notify, created_at",
+      "id, source, brand, model, fuel, transmission, seating_capacity, min_year, max_price, min_price, city, status, notify, created_at",
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
     model: String(body.model ?? "").trim().slice(0, 48),
     fuel: String(body.fuel ?? "").trim().slice(0, 24),
     transmission: String(body.transmission ?? "").trim().slice(0, 24),
+    seatingCapacity: intOrNull(body.seatingCapacity),
     minYear: intOrNull(body.minYear),
     maxPrice: numOrNull(body.maxPrice),
     minPrice: numOrNull(body.minPrice),
@@ -75,6 +77,11 @@ export async function POST(request: NextRequest) {
   }
   if (fields.radiusKm != null && (fields.radiusKm < 1 || fields.radiusKm > 2000)) {
     fields.radiusKm = null;
+  }
+  if (body.seatingCapacity !== undefined && body.seatingCapacity !== null) {
+    if (fields.seatingCapacity == null || !Number.isInteger(fields.seatingCapacity) || fields.seatingCapacity < 1) {
+      return Response.json({ error: "Seating capacity must be a positive whole number" }, { status: 400 });
+    }
   }
 
   const status = body.status === "partial" ? "partial" : "unmet";
@@ -120,6 +127,7 @@ export async function POST(request: NextRequest) {
         model: fields.model,
         fuel: fields.fuel,
         transmission: fields.transmission,
+        seating_capacity: fields.seatingCapacity,
         min_year: fields.minYear,
         max_price: fields.maxPrice,
         min_price: fields.minPrice,

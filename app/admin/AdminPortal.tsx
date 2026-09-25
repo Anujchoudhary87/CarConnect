@@ -198,6 +198,7 @@ export function AdminPortal() {
   const [msg, setMsg] = useState("");
   const [vehStatus, setVehStatus] = useState("all");
   const [confirmAction, setConfirmAction] = useState<{ id: string; name: string; verified: boolean } | null>(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<{ id: string; user_id: string; name: string; type: "dealer" | "customer" } | null>(null);
   const [selectedDealerId, setSelectedDealerId] = useState<string | null>(null);
   const [dealerDetail, setDealerDetail] = useState<DealerDetail | null>(null);
 
@@ -273,6 +274,31 @@ export function AdminPortal() {
         const j = await res.json();
         if (res.ok) setDealerDetail(j as DealerDetail);
       }
+    }
+  }
+
+  async function deleteUserAction(user_id: string, type: "dealer" | "customer") {
+    setBusy((b) => ({ ...b, ["del" + user_id]: true }));
+    setMsg("");
+    try {
+      const endpoint = type === "dealer" ? "/api/admin/dealers" : "/api/admin/customers";
+      const payload = type === "dealer" ? { user_id } : { id: user_id };
+      const res = await fetch(endpoint, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? "Delete fail hua");
+      setMsg(`✅ ${type === "dealer" ? "Dealer" : "Customer"} delete ho gaya`);
+      setCache((c) => ({ ...c, [`${type}s`]: undefined, ["overview"]: undefined }));
+      void load(type === "dealer" ? "dealers" : "customers");
+      void load("overview");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Delete fail hua");
+    } finally {
+      setBusy((b) => ({ ...b, ["del" + user_id]: false }));
+      setConfirmDeleteUser(null);
     }
   }
 
@@ -460,6 +486,29 @@ export function AdminPortal() {
         </div>
       )}
 
+      {confirmDeleteUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4">
+          <Card className="w-full max-w-sm p-5">
+            <h3 className="font-bold text-red-600">⚠ Delete {confirmDeleteUser.type === "dealer" ? "Dealer" : "Customer"}</h3>
+            <p className="mt-1 text-sm text-stone-500">
+              Kya aap <strong>{confirmDeleteUser.name}</strong> ko delete karna chahte hain?
+              <br/><br/>
+              Yeh action inka account aur saari related cheezein (cars, listings, offers) permanently hata dega. Yeh wapas nahi aayega!
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setConfirmDeleteUser(null)}>Cancel</Button>
+              <Button
+                variant="danger"
+                loading={busy["del" + confirmDeleteUser.user_id]}
+                onClick={() => deleteUserAction(confirmDeleteUser.user_id, confirmDeleteUser.type)}
+              >
+                Permanently Delete
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <div className="lg:grid lg:grid-cols-[210px_1fr] lg:gap-6">
         <nav className="flex gap-1 overflow-x-auto rounded-xl border border-stone-200 bg-white p-1.5 lg:flex-col lg:self-start">
           {TABS.map((t) => (
@@ -539,6 +588,9 @@ export function AdminPortal() {
                             ✓ Verify
                           </Button>
                         )}
+                        <Button size="sm" variant="danger" onClick={() => setConfirmDeleteUser({ id: d.id, user_id: d.user_id, name: d.dealership_name, type: "dealer" })}>
+                          🗑 Delete
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -550,7 +602,7 @@ export function AdminPortal() {
               <EmptyState icon="👥" title="Koi customer nahi" description="Abhi tak koi customer registered nahi hai." />
             ) : (
               <DataTable
-                cols={["User ID", "Name", "Email", "Phone", "Registered", "Sell Listings", "Favorites", "Enquiries", "Test Drives"]}
+                cols={["User ID", "Name", "Email", "Phone", "Registered", "Sell Listings", "Favorites", "Enquiries", "Test Drives", "Actions"]}
               >
                 {customers.map((c) => (
                   <tr key={c.id} className="hover:bg-stone-50">
@@ -563,6 +615,11 @@ export function AdminPortal() {
                     <td className="px-3 py-3 text-stone-700">{c.favorites}</td>
                     <td className="px-3 py-3 text-stone-700">{c.enquiries}</td>
                     <td className="px-3 py-3 text-stone-700">{c.test_drives}</td>
+                    <td className="px-3 py-3">
+                      <Button size="sm" variant="danger" onClick={() => setConfirmDeleteUser({ id: c.id, user_id: c.id, name: c.full_name, type: "customer" })}>
+                        🗑 Delete
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </DataTable>

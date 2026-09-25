@@ -3,11 +3,16 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button, Card, Input, Label } from "@/components/ui";
+import { formatLakh } from "@/lib/format";
 
 interface EMICalculatorProps {
   amount?: number;
+  downPayment?: number;
+  defaultRate?: number;
   compact?: boolean;
 }
+
+const DEFAULT_RATE = 10.5;
 
 function parseNumber(value: string, fallback: number): number {
   const n = parseFloat(value);
@@ -18,22 +23,33 @@ function fmtMoney(value: number): string {
   return `₹${Math.round(value).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 }
 
-export function EMICalculator({ amount, compact }: EMICalculatorProps) {
-  const [price, setPrice] = useState(() =>
-    amount && Number.isFinite(amount) ? String(Math.round(amount)) : "500000",
+// When a down payment exists, the EMI principal MUST be the finance amount
+// (price - down payment), never the full vehicle price.
+function initialPrincipal(amount?: number, downPayment?: number): number {
+  const base = amount && Number.isFinite(amount) ? Math.round(amount) : 500000;
+  const down = downPayment != null && Number.isFinite(downPayment) ? Math.round(downPayment) : 0;
+  return Math.max(1, base - down);
+}
+
+export function EMICalculator({ amount, downPayment, defaultRate, compact }: EMICalculatorProps) {
+  const hasFinance = downPayment != null && Number.isFinite(downPayment);
+  const principalLabel = hasFinance ? "Finance Amount" : "Car Price";
+
+  const [principal, setPrincipal] = useState(() => String(initialPrincipal(amount, downPayment)));
+  const [rate, setRate] = useState(() =>
+    defaultRate != null && Number.isFinite(defaultRate) ? String(defaultRate) : String(DEFAULT_RATE),
   );
-  const [rate, setRate] = useState("10.5");
   const [years, setYears] = useState("5");
 
-  const P = parseNumber(price, 0);
+  const P = parseNumber(principal, 0);
   const R = parseNumber(rate, 0);
   const Y = parseNumber(years, 0);
 
-  const priceValid = P > 0 && P <= 100000000;
+  const principalValid = P > 0 && P <= 100000000;
   const rateValid = R >= 0 && R <= 30;
   const yearsValid = Y > 0 && Y <= 15;
 
-  const valid = priceValid && rateValid && yearsValid;
+  const valid = principalValid && rateValid && yearsValid;
 
   const result = useMemo(() => {
     if (!valid) return null;
@@ -45,8 +61,8 @@ export function EMICalculator({ amount, compact }: EMICalculatorProps) {
   }, [P, R, Y, valid]);
 
   const error =
-    !priceValid && price !== "" && P > 100000000
-      ? "Price 10 Cr se zyada nahi ho sakta."
+    !principalValid && principal !== "" && P > 100000000
+      ? "Amount 10 Cr se zyada nahi ho sakta."
       : !yearsValid && years !== "" && Y > 15
         ? "Tenure max 15 saal."
         : "";
@@ -67,16 +83,21 @@ export function EMICalculator({ amount, compact }: EMICalculatorProps) {
 
       <div className={compact ? "mt-3 space-y-2.5" : "mt-5 grid gap-4 sm:grid-cols-3"}>
         <div>
-          <Label htmlFor={compact ? "emi-price-c" : "emi-price"} hint="₹">Car Price</Label>
+          <Label htmlFor={compact ? "emi-price-c" : "emi-price"} hint="₹">{principalLabel}</Label>
           <Input
             id={compact ? "emi-price-c" : "emi-price"}
             type="number"
             min={0}
             step={10000}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            value={principal}
+            onChange={(e) => setPrincipal(e.target.value)}
             placeholder="500000"
           />
+          {hasFinance && (
+            <p className="mt-1 text-[11px] leading-snug text-stone-400">
+              {formatLakh(amount)} Price − {formatLakh(downPayment)} Down Payment
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor={compact ? "emi-rate-c" : "emi-rate"} hint="%/yr">Interest Rate</Label>
@@ -90,6 +111,9 @@ export function EMICalculator({ amount, compact }: EMICalculatorProps) {
             onChange={(e) => setRate(e.target.value)}
             placeholder="10.5"
           />
+          {hasFinance && defaultRate != null && (
+            <p className="mt-1 text-[11px] text-stone-400">Dealer rate — change kar sakte ho.</p>
+          )}
         </div>
         <div>
           <Label htmlFor={compact ? "emi-years-c" : "emi-years"} hint="yr">Tenure</Label>
@@ -137,7 +161,16 @@ export function EMICalculator({ amount, compact }: EMICalculatorProps) {
             Full EMI Calculator →
           </Link>
         ) : (
-          <Button type="button" variant="outline" size="sm" onClick={() => { setPrice(amount ? String(Math.round(amount)) : "500000"); setRate("10.5"); setYears("5"); }}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPrincipal(String(initialPrincipal(amount, downPayment)));
+              setRate(String(defaultRate != null && Number.isFinite(defaultRate) ? defaultRate : DEFAULT_RATE));
+              setYears("5");
+            }}
+          >
             Reset
           </Button>
         )}

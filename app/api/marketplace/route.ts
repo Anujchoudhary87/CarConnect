@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
 
   const latitude = f.lat ? parseFloat(f.lat) : NaN;
   const longitude = f.lng ? parseFloat(f.lng) : NaN;
-  const radiusKm = f.radius_km ? parseFloat(f.radius_km) : NaN;
+  const radiusKmStr = f.radius_km;
+  const is200Plus = radiusKmStr === "200+";
+  const radiusKm = is200Plus ? NaN : (radiusKmStr ? parseFloat(radiusKmStr) : NaN);
   const hasLocation = !isNaN(latitude) && !isNaN(longitude);
 
   let query = supabase
@@ -30,7 +32,8 @@ export async function GET(request: NextRequest) {
     .eq("status", "active");
 
   // Distance (bounding box approximation, real distance computed below).
-  if (hasLocation && !isNaN(radiusKm) && radiusKm > 0) {
+  // "200+" means ALL cars (no distance restriction), so skip filtering entirely.
+  if (hasLocation && !is200Plus && !isNaN(radiusKm) && radiusKm > 0) {
     const b = boundingBox(latitude, longitude, radiusKm);
     query = query
       .gte("lat", b.minLat)
@@ -75,6 +78,13 @@ export async function GET(request: NextRequest) {
   if (f.max_year) query = query.lte("year", parseInt(f.max_year));
   if (f.max_km) query = query.lte("km", parseInt(f.max_km));
   if (f.owner) query = query.eq("owner", f.owner);
+  if (f.seats) {
+    const seats = Number(f.seats);
+    if (!Number.isInteger(seats) || seats < 1) {
+      return Response.json({ error: "Seating capacity must be a positive whole number" }, { status: 400 });
+    }
+    query = query.eq("seating_capacity", seats);
+  }
 
   const { data, error } = await query.order("created_at", { ascending: false }).limit(LIMIT);
 
@@ -104,6 +114,11 @@ export async function GET(request: NextRequest) {
       is_favorite: favoriteIds.has(v.id),
     };
   });
+
+  // "200+" = no distance cap (all cars from 0 km onward).
+  if (hasLocation && !is200Plus && !isNaN(radiusKm) && radiusKm > 0) {
+    items = items.filter((v) => v.distance_km != null && v.distance_km <= radiusKm);
+  }
 
   // Sorting.
   const sort = f.sort ?? (hasLocation ? "distance" : "newest");

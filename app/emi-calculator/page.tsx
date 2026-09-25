@@ -28,7 +28,7 @@ export default function EMICalculatorPage() {
               EMI = P × r × (1+r)ⁿ / ((1+r)ⁿ − 1)
             </p>
             <ul className="mt-3 space-y-1.5 text-sm text-stone-600">
-              <li>• <strong>P</strong> — Loan principal (car price)</li>
+              <li>• <strong>P</strong> — Loan principal (finance amount = car price − down payment)</li>
               <li>• <strong>r</strong> — Monthly interest rate (annual ÷ 12 ÷ 100)</li>
               <li>• <strong>n</strong> — Total months (years × 12)</li>
             </ul>
