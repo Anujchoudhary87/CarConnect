@@ -190,34 +190,43 @@ function NearbySection({
         </Link>
       </div>
 
-      {location && (
-        <div className="no-scrollbar mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="shrink-0 py-1.5 text-xs font-semibold text-stone-400">Radius:</span>
+      <div className="no-scrollbar mt-4 flex items-center gap-2 overflow-x-auto pb-1">
+        <span className="shrink-0 py-1.5 text-xs font-semibold text-stone-400">Radius:</span>
+        <button
+          onClick={() => setRadius(null)}
+          className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+            radius === null || !location
+              ? "border-brand bg-brand text-white"
+              : "border-stone-200 bg-white text-stone-600 hover:border-brand"
+          }`}
+        >
+          All India
+        </button>
+        {RADII.map((r) => (
           <button
-            onClick={() => setRadius(null)}
+            key={r}
+            onClick={() => {
+              if (!location) {
+                // If no location, we can't really do a radius, but let's keep the UI state
+                setRadius(r);
+              } else {
+                setRadius(r);
+              }
+            }}
+            disabled={!location}
             className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
-              radius === null
+              radius === r && location
                 ? "border-brand bg-brand text-white"
-                : "border-stone-200 bg-white text-stone-600 hover:border-brand"
-            }`}
-          >
-            All India
-          </button>
-          {RADII.map((r) => (
-            <button
-              key={r}
-              onClick={() => setRadius(r)}
-              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                radius === r
-                  ? "border-brand bg-brand text-white"
+                : !location
+                  ? "border-stone-100 bg-stone-50 text-stone-300 cursor-not-allowed"
                   : "border-stone-200 bg-white text-stone-600 hover:border-brand"
-              }`}
-            >
-              {r} km
-            </button>
-          ))}
-        </div>
-      )}
+            }`}
+            title={!location ? "Pehle header mein location select karein" : ""}
+          >
+            {r} km
+          </button>
+        ))}
+      </div>
 
       <div className="mt-5">
         {cars === null && !error ? (
