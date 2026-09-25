@@ -56,6 +56,7 @@ export function HomeSections({
         sectionId="nearby-cars"
         favState={favState}
         onToggleFavorite={onToggleFavorite}
+        allIndiaCars={newest}
       />
 
       {/* Recently Added */}
@@ -113,10 +114,12 @@ function NearbySection({
   sectionId,
   favState,
   onToggleFavorite,
+  allIndiaCars,
 }: {
   sectionId: string;
   favState: Record<string, boolean>;
   onToggleFavorite: (car: VehicleWithInfo, favorite: boolean) => void;
+  allIndiaCars: VehicleWithInfo[];
 }) {
   const [location, setLocation] = useState<HomeLocation | null>(() => getStoredLocation());
   const [radius, setRadius] = useState<string | null>(location ? NEARBY_RADIUS : null);
@@ -124,17 +127,19 @@ function NearbySection({
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
+    if (!location) {
+      setCars(allIndiaCars.slice(0, 12));
+      return;
+    }
+
     setError("");
     try {
       const params = new URLSearchParams();
-      if (location) {
-        params.set("lat", String(location.lat));
-        params.set("lng", String(location.lng));
-        params.set("sort", "distance");
-        if (radius) params.set("radius_km", radius);
-      } else {
-        params.set("sort", "newest");
-      }
+      params.set("lat", String(location.lat));
+      params.set("lng", String(location.lng));
+      params.set("sort", "distance");
+      if (radius) params.set("radius_km", radius);
+
       const res = await fetch(`/api/marketplace?${params.toString()}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Cars could not be loaded");
@@ -143,7 +148,7 @@ function NearbySection({
       setError(e instanceof Error ? e.message : "Cars could not be loaded");
       setCars([]);
     }
-  }, [location, radius]);
+  }, [location, radius, allIndiaCars]);
 
   useEffect(() => {
     let cancelled = false;
