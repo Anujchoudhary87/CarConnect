@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button, Card, Input, Label } from "@/components/ui";
 import { formatLakh } from "@/lib/format";
-import { computeEmi, EMI_DEFAULT_RATE, formatEmi } from "@/lib/emi";
 
 interface EMICalculatorProps {
   amount?: number;
@@ -13,13 +12,15 @@ interface EMICalculatorProps {
   compact?: boolean;
 }
 
+const DEFAULT_RATE = 10.5;
+
 function parseNumber(value: string, fallback: number): number {
   const n = parseFloat(value);
   return Number.isFinite(n) && value.trim() !== "" ? n : fallback;
 }
 
 function fmtMoney(value: number): string {
-  return formatEmi(value);
+  return `₹${Math.round(value).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 }
 
 // When a down payment exists, the EMI principal MUST be the finance amount
@@ -36,7 +37,7 @@ export function EMICalculator({ amount, downPayment, defaultRate, compact }: EMI
 
   const [principal, setPrincipal] = useState(() => String(initialPrincipal(amount, downPayment)));
   const [rate, setRate] = useState(() =>
-    defaultRate != null && Number.isFinite(defaultRate) ? String(defaultRate) : String(EMI_DEFAULT_RATE),
+    defaultRate != null && Number.isFinite(defaultRate) ? String(defaultRate) : String(DEFAULT_RATE),
   );
   const [years, setYears] = useState("5");
 
@@ -50,10 +51,14 @@ export function EMICalculator({ amount, downPayment, defaultRate, compact }: EMI
 
   const valid = principalValid && rateValid && yearsValid;
 
-  const result = useMemo(
-    () => (valid ? computeEmi(P, R, Y) : null),
-    [P, R, Y, valid],
-  );
+  const result = useMemo(() => {
+    if (!valid) return null;
+    const n = Math.max(1, Math.round(Y * 12));
+    const r = R / 100 / 12;
+    const monthly = R === 0 ? P / n : (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    const total = monthly * n;
+    return { monthly, total, interest: total - P, n };
+  }, [P, R, Y, valid]);
 
   const error =
     !principalValid && principal !== "" && P > 100000000
@@ -162,7 +167,7 @@ export function EMICalculator({ amount, downPayment, defaultRate, compact }: EMI
             size="sm"
             onClick={() => {
               setPrincipal(String(initialPrincipal(amount, downPayment)));
-              setRate(String(defaultRate != null && Number.isFinite(defaultRate) ? defaultRate : EMI_DEFAULT_RATE));
+              setRate(String(defaultRate != null && Number.isFinite(defaultRate) ? defaultRate : DEFAULT_RATE));
               setYears("5");
             }}
           >

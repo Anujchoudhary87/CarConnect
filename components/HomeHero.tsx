@@ -50,8 +50,7 @@ export function HomeHero() {
           Apni next car dhoondhna ab aur easy hai
         </h1>
         <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-stone-300 sm:text-sm">
-          Do raaste chuno — khud live dealer inventory search karo, ya AI Car Advisor ko apni
-          requirement bata kar shortlist pao.
+          Real dealer inventory mein search karo ya AI Advisor se apne liye suitable car choose karo.
         </p>
 
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3 max-w-4xl">
@@ -65,7 +64,7 @@ export function HomeHero() {
             <div className="min-w-0 flex-1">
               <span className="block text-sm font-bold text-white">Search Cars</span>
               <span className="block truncate text-xs text-stone-300">
-                Khud search &amp; filter — brand, model, budget
+                Brand, model, city stock
               </span>
             </div>
             <span className="text-sm font-semibold text-red-300 transition group-hover:translate-x-0.5 group-hover:text-red-200">
@@ -83,7 +82,7 @@ export function HomeHero() {
             <div className="min-w-0 flex-1">
               <span className="block text-sm font-bold text-white">AI Car Advisor</span>
               <span className="block truncate text-xs text-stone-300">
-                Apni requirement batao — AI shortlist banayega
+                Budget &amp; family guidance
               </span>
             </div>
             <span className="text-sm font-semibold text-red-300 transition group-hover:translate-x-0.5 group-hover:text-red-200">

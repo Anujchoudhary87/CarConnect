@@ -6,7 +6,6 @@ import { ContactBar } from "@/components/ContactBar";
 import { StaticMap } from "@/components/StaticMap";
 import { Card, Badge } from "@/components/ui";
 import { EMICalculator } from "@/components/EMICalculator";
-import { VehicleViewTracker } from "@/components/VehicleViewTracker";
 import { APP_URL } from "@/lib/env";
 import { formatINR, formatKm, formatLakh, ownerLabel, timeAgo } from "@/lib/format";
 import { sortVehicleImages } from "@/lib/poster/sort";
@@ -223,17 +222,6 @@ export default async function CarDetailPage({
           <Card className="p-5">
             <p className="text-3xl font-extrabold text-brand-dark">{formatINR(car.price)}</p>
             <p className="mt-0.5 text-xs text-stone-400">On-road price expected, dealer se confirm karein.</p>
-            <VehicleViewTracker
-              vehicle={{
-                id: car.id,
-                brand: car.brand,
-                model: car.model,
-                variant: car.variant,
-                city: car.city,
-                image: imageUrls[0] ?? null,
-                price: Number(car.price),
-              }}
-            />
             {car.down_payment != null && Number.isFinite(Number(car.down_payment)) && (
               <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
@@ -257,7 +245,7 @@ export default async function CarDetailPage({
                 </dl>
               </div>
             )}
-            <div className="mt-4 scroll-mt-28" id="contact-dealer">
+            <div className="mt-4">
               <ContactBar
                 vehicle={car}
                 dealer={dealerRow}
