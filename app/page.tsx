@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HomeHero } from "@/components/HomeHero";
-import { HomeSearch } from "@/components/HomeSearch";
 import { HomeSections } from "@/components/HomeSections";
-import { AiAssistant } from "@/components/AiAssistant";
 import { ButtonLink } from "@/components/ui";
 import { APP_URL } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -119,49 +117,14 @@ export default async function Home() {
     <div>
       <HomeHero />
 
-      {/* Car Search — browse/filter live inventory yourself (path 1 of 2) */}
-      <div className="pt-6">
-        <HomeSearch />
-      </div>
-
-      {/* Nearby Cars → Recently Viewed → Recently Added Cars */}
-      <div className="mx-auto max-w-6xl px-4 pt-8 pb-2 space-y-10">
+      {/* Live inventory carousels */}
+      <div className="mx-auto max-w-6xl px-4 pt-6 pb-2 space-y-10">
         <HomeSections
           newest={featured}
           recentlyAdded={recent}
           initialFavorites={{}}
         />
       </div>
-
-      {/* AI Car Advisor + Car Buying Journey (path 2 of 2) */}
-      <section
-        id="ai-advisor"
-        className="mt-10 scroll-mt-24 border-y border-stone-200 bg-stone-50/70 py-10"
-      >
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-brand">
-                Full buying journey
-              </p>
-              <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">
-                AI Car Advisor
-              </h2>
-              <p className="mt-1 max-w-2xl text-sm text-stone-500">
-                Requirement se lekar shortlist, compare, EMI, dealer contact aur test drive — ek hi
-                flow mein, sirf real dealer inventory par.
-              </p>
-            </div>
-            <Link
-              href="/ai-advisor"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-brand transition-colors hover:text-brand-dark"
-            >
-              Full page advisor →
-            </Link>
-          </div>
-          <AiAssistant showHeader={false} />
-        </div>
-      </section>
 
       {/* Popular brands */}
       {brands.length > 0 && (
