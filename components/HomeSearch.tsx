@@ -326,12 +326,20 @@ export function HomeSearch() {
   return (
     <section id="car-search" className="mx-auto max-w-6xl scroll-mt-24 px-4">
       <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
-        <div className="max-w-2xl">
-          <p className="text-xs font-bold uppercase tracking-widest text-brand">Fast inventory search</p>
-          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">Car Search</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Seedhi smart search — brand, model, year ya fuel se verified dealer stock search karein.
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="max-w-2xl">
+            <p className="text-xs font-bold uppercase tracking-widest text-brand">Fast inventory search</p>
+            <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">Car Search</h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Seedhi smart search — brand, model, year ya fuel se verified dealer stock search karein.
+            </p>
+          </div>
+          <Link
+            href="/marketplace"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-brand transition-colors hover:text-brand-dark"
+          >
+            Full filters &amp; inventory →
+          </Link>
         </div>
 
         <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
