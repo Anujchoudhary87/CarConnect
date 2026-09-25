@@ -119,7 +119,7 @@ function NearbySection({
   onToggleFavorite: (car: VehicleWithInfo, favorite: boolean) => void;
 }) {
   const [location, setLocation] = useState<HomeLocation | null>(() => getStoredLocation());
-  const [radius, setRadius] = useState<string | null>(NEARBY_RADIUS);
+  const [radius, setRadius] = useState<string | null>(location ? NEARBY_RADIUS : null);
   const [cars, setCars] = useState<VehicleWithInfo[] | null>(null);
   const [error, setError] = useState("");
 
