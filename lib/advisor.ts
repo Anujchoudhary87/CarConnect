@@ -9,7 +9,9 @@ import { formatPriceShort } from "@/lib/format";
 export interface AdvisorCtx {
   income: number | null;        // monthly income (₹)
   emi: number | null;           // monthly EMI target (₹)
-  budget: number | null;        // total budget (₹)
+  budget: number | null;        // effective budget cap (₹) = budgetMax ?? budgetMin
+  budgetMin: number | null;     // lower bound of a stated range (₹)
+  budgetMax: number | null;     // upper bound of a stated range (₹); null when open-ended
   down: number | null;          // down payment (₹)
   family: boolean;
   seats: number | null;         // positive whole number (e.g. 5, 7, 13, 15)
@@ -30,6 +32,8 @@ export function emptyCtx(): AdvisorCtx {
     income: null,
     emi: null,
     budget: null,
+    budgetMin: null,
+    budgetMax: null,
     down: null,
     family: false,
     seats: null,
@@ -126,18 +130,76 @@ function emiOf(s: string): number | null {
 
 // "8 lakh budget", "budget 8 lakh", "under 8 lakh", "8 lakh tak", "max 10 lakh", "10 lakh ke under"
 function budgetOf(s: string): number | null {
+  // The trailing lookahead keeps a range out of this single-amount path: in "budget 8-10 lakh" the
+  // first number carries no unit, so reading it as rupees would store a budget of 8 instead of
+  // falling through to the range branch of parseBudgetRange().
+  const tail = /\s*(lakh|lac|lakhs|l|cr|crore|k)?(?!\s*(?:-|–|—|to|ore|se)\s*\d)/i;
   const byWord = s.match(
-    /(?:under|below|less ?than|up to|max|tak|ke under|budget)[^\d₹]*(?:₹)?\s*(\d+(?:\.\d+)?)\s*(lakh|lac|lakhs|l|cr|crore|k)?/i,
+    new RegExp(
+      String.raw`(?:under|below|less ?than|up to|max|tak|ke under|budget)[^\d₹]*(?:₹)?\s*(\d+(?:\.\d+)?)` +
+        String.raw`${tail.source}`,
+      "i",
+    ),
   );
   if (byWord) {
     const v = amountToRupees(parseFloat(byWord[1]), byWord[2] ?? "");
     if (v > 0 && v <= 1e9) return v;
   }
-  const afterBudget = s.match(/budget\s+(?:hai\s+)?(?:₹)?\s*(\d+(?:\.\d+)?)\s*(lakh|lac|lakhs|l|cr|crore|k)?/i);
+  const afterBudget = s.match(
+    new RegExp(String.raw`budget\s+(?:hai\s+)?(?:₹)?\s*(\d+(?:\.\d+)?)${tail.source}`, "i"),
+  );
   if (afterBudget) {
     const v = amountToRupees(parseFloat(afterBudget[1]), afterBudget[2] ?? "");
     if (v > 0 && v <= 1e9) return v;
   }
+  return null;
+}
+
+export interface BudgetRange {
+  min: number;
+  max: number | null;
+}
+
+const MONEY_UNIT = "lakh|lac|lakhs|l|cr|crore|k";
+
+// The ONE budget normalizer. Quick-reply chips and typed text both reach applyTurn() and are
+// parsed here, so clicking "₹8-10 Lakh" and typing "₹8-10 Lakh" produce identical state.
+//   "5-7 lakh"   -> { min:  500000, max:  700000 }
+//   "8-10 lakh"  -> { min:  800000, max: 1000000 }
+//   "10-15 lakh" -> { min: 1000000, max: 1500000 }
+//   "15 lakh+"   -> { min: 1500000, max: null }   (open ended)
+//   "8 lakh"     -> { min:  800000, max:  800000 } (single amount caps both ends)
+// A money unit is required, so a plain number range ("7-8", "7-8 saal") is never read as money.
+export function parseBudgetRange(s: string): BudgetRange | null {
+  const range = s.match(
+    new RegExp(
+      String.raw`^[^\d]{0,40}?(\d+(?:\.\d+)?)\s*(${MONEY_UNIT})?\s*(?:-|–|—|to|ore|se)\s*(\d+(?:\.\d+)?)\s*(${MONEY_UNIT})?\s*(?:ka\s+budget|budget|mein)?\s*$`,
+      "i",
+    ),
+  );
+  if (range) {
+    const unit = range[4] ?? range[2] ?? "";
+    if (!unit) return null;
+    const max = amountToRupees(parseFloat(range[3]), unit);
+    if (max <= 0 || max > 1e9) return null;
+    const lower = amountToRupees(parseFloat(range[1]), range[2] ?? unit);
+    return { min: lower > 0 && lower <= max ? lower : max, max };
+  }
+
+  const open = s.match(
+    new RegExp(
+      String.raw`^[^\d]{0,40}?(\d+(?:\.\d+)?)\s*(${MONEY_UNIT})\s*(?:\+|plus|or\s+more|or\s+above|se\s+(?:zyada|upar)|aur|above|up)\s*(?:ka\s+budget|budget|mein)?\s*$`,
+      "i",
+    ),
+  );
+  if (open) {
+    const min = amountToRupees(parseFloat(open[1]), open[2]);
+    if (min <= 0 || min > 1e9) return null;
+    return { min, max: null };
+  }
+
+  const single = budgetOf(s);
+  if (single != null) return { min: single, max: single };
   return null;
 }
 
@@ -171,9 +233,12 @@ export function applyTurn(q: string, prev: AdvisorCtx, pending: AdvisorField | n
     answeredField = "emi";
   }
 
-  const budget = budgetOf(s);
-  if (budget != null) {
-    next.budget = budget;
+  const budgetRange = parseBudgetRange(s);
+  if (budgetRange) {
+    next.budgetMin = budgetRange.min;
+    next.budgetMax = budgetRange.max;
+    // Effective cap for existing matching: the upper bound, or the floor when open-ended.
+    next.budget = budgetRange.max ?? budgetRange.min;
     answeredField = answeredField ?? "budget";
   }
 
@@ -270,8 +335,11 @@ export function applyTurn(q: string, prev: AdvisorCtx, pending: AdvisorField | n
       const v = amounts[0].value;
       if (v > 0) {
         if (pending === "emi") next.emi = v;
-        else if (pending === "budget") next.budget = v;
-        else if (pending === "seats") next.seats = v;
+        else if (pending === "budget") {
+          next.budget = v;
+          next.budgetMin = v;
+          next.budgetMax = v;
+        } else if (pending === "seats") next.seats = v;
         answeredField = pending;
       }
     }
@@ -544,7 +612,13 @@ export function verdictFor(ctx: AdvisorCtx, models: string[]): string {
 // Context badges for currently remembered preferences
 export function contextSummary(ctx: AdvisorCtx): string[] {
   const parts: string[] = [];
-  if (ctx.budget != null) parts.push(`Budget ₹${Math.round(ctx.budget / 100000)}L`);
+  if (ctx.budgetMin != null) {
+    const lo = Math.round(ctx.budgetMin / 100000);
+    const hi = ctx.budgetMax != null ? Math.round(ctx.budgetMax / 100000) : null;
+    parts.push(hi != null && hi !== lo ? `Budget ₹${lo}-${hi}L` : `Budget ₹${lo}L+`);
+  } else if (ctx.budget != null) {
+    parts.push(`Budget ₹${Math.round(ctx.budget / 100000)}L`);
+  }
   if (ctx.income != null) parts.push(`Income ₹${Math.round(ctx.income / 1000)}k/mo`);
   if (ctx.emi != null) parts.push(`EMI ~₹${Math.round(ctx.emi / 1000)}k`);
   if (ctx.seats != null) parts.push(`${ctx.seats}-seater`);
@@ -558,6 +632,9 @@ export function contextSummary(ctx: AdvisorCtx): string[] {
   if (ctx.offroad) parts.push("Off-road");
   return parts;
 }
+
+export const ADVISOR_GREETING =
+  "Namaste! Main Car Connect ka AI Car Advisor hoon. Budget, family size, fuel preference aur city ya highway use batao — main Car Connect ki live dealer inventory se sirf available cars suggest karunga. Ek-ek question poochhunga, jo aap bata chuke ho wo dobara nahi poochhunga.";
 
 // Friendly acknowledgement when recommendations are ready
 export function advisorIntro(ctx: AdvisorCtx): string {

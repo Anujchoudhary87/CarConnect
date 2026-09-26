@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { VehicleWithInfo } from "@/lib/types";
 import { CarCard } from "@/components/CarCard";
 import { Button } from "@/components/ui";
@@ -16,12 +16,28 @@ import {
   advisorGuidance,
   compareModelsIn,
   contextSummary,
-  emptyCtx,
   pickQuestion,
   verdictFor,
   type AdvisorCtx,
   type AdvisorQuestion,
 } from "@/lib/advisor";
+import {
+  activeIdFor,
+  appendMessage,
+  appendToSession,
+  getServerActiveId,
+  getServerSessions,
+  loadActiveId,
+  loadSessions,
+  newAdvisorSession,
+  removeSession,
+  saveActiveId,
+  saveSessions,
+  subscribeAdvisorSessions,
+  updateSession,
+  upsertSession,
+  type AdvisorSession,
+} from "@/lib/advisor-sessions";
 import { AI_ASK_EVENT } from "@/components/ai-ask";
 
 const SUGGESTIONS = [
@@ -142,16 +158,27 @@ function knownModelIn(normQuery: string, vehicles: VehicleWithInfo[]): string {
 
 // Words that must never be treated as a model name even when the no-brand parser
 // surfaces them first (personal/financial/advisory phrasing, e.g. "Meri income...").
+// Also covers the advisor's own quick-reply labels: answering a question with a chip
+// must never be read as a model search, otherwise the turn dead-ends with no reply.
 const GENERIC_MODEL_WORDS = new Set([
   "meri", "mera", "mere", "main", "maine", "mujhe", "mai", "koi", "aap", "hum",
   "income", "salary", "earn", "emi", "installment", "instalment", "downpayment", "advance",
+  "mostly", "highway", "traffic", "dono", "mixed", "bhi", "chalega", "gearbox", "rating",
 ]);
 
 // Model-only search: "Thar", "Creta", "2022 Thar diesel", "near Pilani Thar" all resolve to a
 // hard model filter against the vehicle model field, without requiring the brand.
-function resolveBrandModel(q: string, vehicles: VehicleWithInfo[]): { brand: string; model: string } {
+// An answer to the advisor's own quick reply is always a conversational turn, never a model
+// search — otherwise the turn dead-ends in the "model not in stock" path with no follow-up.
+function resolveBrandModel(
+  q: string,
+  vehicles: VehicleWithInfo[],
+  quickReplies: readonly string[] = [],
+): { brand: string; model: string } {
+  const norm = normalizePhrase(q);
+  if (quickReplies.some((r) => normalizePhrase(r) === norm)) return { brand: "", model: "" };
   const parsed = parseBrandModel(q);
-  const known = knownModelIn(normalizePhrase(q), vehicles);
+  const known = knownModelIn(norm, vehicles);
   const generic = !parsed.brand && GENERIC_MODEL_WORDS.has(parsed.model.toLowerCase());
   return { brand: parsed.brand, model: known || (generic ? "" : parsed.model) };
 }
@@ -256,21 +283,89 @@ export function AiAssistant({
   const [optInStatus, setOptInStatus] = useState<"ask" | "on" | "off">("ask");
   const [optInMsg, setOptInMsg] = useState("");
 
-  // Advisor conversation state (current session only — never persisted).
-  const ctxRef = useRef<AdvisorCtx>(emptyCtx());
-  const questionRef = useRef<AdvisorQuestion | null>(null);
-  const [question, setQuestion] = useState<AdvisorQuestion | null>(null);
-  const [assistantLine, setAssistantLine] = useState("");
-  const [advisorChips, setAdvisorChips] = useState<string[]>([]);
-  const [advisorActive, setAdvisorActive] = useState(false);
   const [verdict, setVerdict] = useState("");
 
-  function setQuestionUI(q: AdvisorQuestion | null) {
-    questionRef.current = q;
-    setQuestion(q);
+  const sessions = useSyncExternalStore(
+    subscribeAdvisorSessions,
+    loadSessions,
+    getServerSessions,
+  );
+  const activeId = useSyncExternalStore(subscribeAdvisorSessions, loadActiveId, getServerActiveId);
+  const active = sessions.find((s) => s.id === activeId) ?? sessions[0] ?? null;
+
+  function commit(next: AdvisorSession) {
+    saveSessions(upsertSession(loadSessions(), next));
+    saveActiveId(next.id);
   }
 
+  function resetPanel() {
+    setQuery("");
+    setLoading(false);
+    setSearched(false);
+    setNote("");
+    setError("");
+    setResults([]);
+    setCompareName(null);
+    setMode(null);
+    setAlternatives([]);
+    setShowAlternatives(false);
+    setModelRequest(false);
+    setRelatedChoice("ask");
+    setModelLabel("");
+    setRequirement("");
+    setRecordId(null);
+    setOptInStatus("ask");
+    setOptInMsg("");
+    setVerdict("");
+  }
+
+  function startNewChat() {
+    const fresh = newAdvisorSession();
+    commit(fresh);
+    resetPanel();
+  }
+
+  function openChat(id: string) {
+    if (id === active?.id) return;
+    saveActiveId(id);
+    resetPanel();
+  }
+
+  function deleteActiveChat() {
+    if (!active) return;
+    const list = removeSession(loadSessions(), active.id);
+    const next = list.find((s) => s.id === activeIdFor(list, null));
+    if (next) {
+      saveSessions(list);
+      saveActiveId(next.id);
+    } else {
+      const fresh = newAdvisorSession();
+      saveSessions(upsertSession(list, fresh));
+      saveActiveId(fresh.id);
+    }
+    resetPanel();
+  }
+
+  useEffect(() => {
+    const list = loadSessions();
+    if (list.length === 0) {
+      const fresh = newAdvisorSession();
+      saveSessions([fresh]);
+      saveActiveId(fresh.id);
+      return;
+    }
+    const current = loadActiveId();
+    if (!current || !list.some((s) => s.id === current)) saveActiveId(activeIdFor(list, current));
+  }, []);
+
+  const question = active?.question ?? null;
+  const advisorActive = Boolean(active);
+  const advisorChips = useMemo(() => (active ? contextSummary(active.ctx) : []), [active]);
+  const hasPanel = searched && !error && (mode === "none" || results.length > 0 || Boolean(compareName));
+
   const runRef = useRef(run);
+  // Synchronous mirror of `loading` so a rapid second tap cannot start a second turn.
+  const busyRef = useRef(false);
   useEffect(() => {
     runRef.current = run;
   });
@@ -284,9 +379,35 @@ export function AiAssistant({
     return () => window.removeEventListener(AI_ASK_EVENT, onAsk);
   }, []);
 
-  async function run(q: string) {
+  async function run(q: string, echo = true) {
     if (!q.trim()) return;
-    setQuery(q);
+    // Atomic in-flight guard. `loading` state is not enough on its own: React has not re-rendered
+    // (and the chip is not disabled yet) when a second tap lands in the same tick, so two turns
+    // would start from the same state. A ref flips synchronously.
+    if (busyRef.current) return;
+    busyRef.current = true;
+    try {
+      await runTurn(q, echo);
+    } finally {
+      busyRef.current = false;
+      setLoading(false);
+    }
+  }
+
+  async function runTurn(q: string, echo: boolean) {
+    const asked = q.trim();
+    // Always start from the freshly stored session, never from a render-time snapshot.
+    const storedList = loadSessions();
+    const storedActive = storedList.find((s) => s.id === loadActiveId()) ?? null;
+    let session = storedActive ?? newAdvisorSession();
+    const sessionId = session.id;
+    if (!storedActive) commit(session);
+    else saveActiveId(sessionId);
+    const prevPending = session.question?.field ?? null;
+    const pendingReplies = session.question?.replies ?? [];
+    const baseCtx: AdvisorCtx = session.ctx;
+
+    setQuery(echo ? q : "");
     setLoading(true);
     setError("");
     setNote("");
@@ -303,33 +424,41 @@ export function AiAssistant({
     setRecordId(null);
     setOptInStatus("ask");
     setOptInMsg("");
-    const prevPending = questionRef.current?.field ?? null;
-    setQuestionUI(null);
-    setAssistantLine("");
-    setAdvisorChips([]);
-    setAdvisorActive(false);
     setVerdict("");
 
+    appendToSession(sessionId, "user", asked);
+
     const parsed = parseReq(q);
+    let location = session.location;
+    if (parsed.wantsNear) {
+      const stored = getStoredLocation();
+      if (stored) {
+        location = { lat: stored.lat, lng: stored.lng, label: stored.label };
+        session = { ...session, location };
+        updateSession(sessionId, (s) => ({ ...s, location }));
+      }
+    }
+
+    let reply = "";
+    let nextQuestion: AdvisorQuestion | null = null;
+    let nextCtx: AdvisorCtx = baseCtx;
 
     try {
       const params = new URLSearchParams({ sort: "newest" });
-      if (parsed.wantsNear) {
-        const loc = getStoredLocation();
-        if (loc) {
-          params.set("lat", String(loc.lat));
-          params.set("lng", String(loc.lng));
-          params.set("sort", "distance");
-        }
+      if (location) {
+        params.set("lat", String(location.lat));
+        params.set("lng", String(location.lng));
+        params.set("sort", "distance");
       }
       const res = await fetch(`/api/marketplace?${params.toString()}`);
       const data = await res.json();
+      if (loadActiveId() !== sessionId) return;
       if (!res.ok) throw new Error(data.error ?? "Cars load nahi hui");
       const vehicles = (data.vehicles ?? []) as VehicleWithInfo[];
 
       // Conversational state update
-      const ctxTurn = applyTurn(q, ctxRef.current, prevPending);
-      ctxRef.current = ctxTurn.ctx;
+      nextCtx = applyTurn(q, baseCtx, prevPending).ctx;
+      const ctx = nextCtx;
 
       // 1. Model comparison check
       const compareNames =
@@ -338,8 +467,6 @@ export function AiAssistant({
           : compareModelsIn(q, vehicles);
 
       if (compareNames && compareNames.length >= 2) {
-        setAdvisorActive(true);
-        setAdvisorChips(contextSummary(ctxRef.current));
         const found: { name: string; car: VehicleWithInfo }[] = [];
         for (const name of compareNames) {
           const car = vehicles.find(
@@ -358,15 +485,15 @@ export function AiAssistant({
             reasons: [car.city ? `${car.city} mein listed` : "Location set nahi"],
           })),
         );
-        const v = verdictFor(ctxRef.current, compareNames);
+        const v = verdictFor(ctx, compareNames);
         setVerdict(
           v ||
             "Dono models ke trade-offs compare kiye gaye hain. Apni family size ya budget batao to personalized recommendation milega.",
         );
-        setAssistantLine(advisorGuidance(q, ctxRef.current));
+        reply = advisorGuidance(q, ctx);
       } else {
         // 2. Specific-model request check
-        const { brand, model } = resolveBrandModel(q, vehicles);
+        const { brand, model } = resolveBrandModel(q, vehicles, pendingReplies);
         const normModel = model ? model.toLowerCase() : "";
         const normBrand = brand ? brand.toLowerCase() : "";
 
@@ -390,11 +517,11 @@ export function AiAssistant({
             rawRequirement: q,
             brand,
             model,
-            fuel: parsed.fuel ?? ctxRef.current.fuelPref ?? "",
-            transmission: parsed.transmission ?? ctxRef.current.transPref ?? "",
-            seatingCapacity: parsed.seats ?? ctxRef.current.seats,
+            fuel: parsed.fuel ?? ctx.fuelPref ?? "",
+            transmission: parsed.transmission ?? ctx.transPref ?? "",
+            seatingCapacity: parsed.seats ?? ctx.seats,
             minYear: parsed.minYear,
-            maxPrice: parsed.maxPrice ?? ctxRef.current.budget,
+            maxPrice: parsed.maxPrice ?? ctx.budget,
             minPrice: null,
             city: "",
             lat: null,
@@ -408,19 +535,16 @@ export function AiAssistant({
             .sort((a, b) => b.score - a.score);
           setAlternatives(scored.slice(0, 6));
           setResults([]);
-        } else if (advisorReady(ctxRef.current)) {
+          reply = advisorGuidance(q, ctx);
+        } else if (advisorReady(ctx)) {
           // 3. Enough information is known! Search actual CarConnect live inventory
-          setAdvisorActive(true);
-          setAdvisorChips(contextSummary(ctxRef.current));
-          setQuestionUI(null);
-
           const advParsed: Parsed = {
-            maxPrice: ctxRef.current.budget,
+            maxPrice: ctx.budget,
             minYear: parsed.minYear,
-            fuel: ctxRef.current.fuelPref || null,
-            transmission: ctxRef.current.transPref || null,
+            fuel: ctx.fuelPref || null,
+            transmission: ctx.transPref || null,
             wantsNear: parsed.wantsNear,
-            seats: ctxRef.current.seats,
+            seats: ctx.seats,
             compare: null,
           };
 
@@ -430,20 +554,20 @@ export function AiAssistant({
 
           // Strict filters on stated hard constraints (budget, seating, fuel, transmission)
           const advPool = advScored.filter((v) => {
-            if (ctxRef.current.budget != null && v.price > ctxRef.current.budget) return false;
+            if (ctx.budget != null && v.price > ctx.budget) return false;
             if (
-              ctxRef.current.seats != null &&
-              (v.seating_capacity == null || v.seating_capacity !== ctxRef.current.seats)
+              ctx.seats != null &&
+              (v.seating_capacity == null || v.seating_capacity !== ctx.seats)
             )
               return false;
             if (
-              ctxRef.current.fuelPref &&
-              v.fuel.toLowerCase() !== ctxRef.current.fuelPref.toLowerCase()
+              ctx.fuelPref &&
+              v.fuel.toLowerCase() !== ctx.fuelPref.toLowerCase()
             )
               return false;
             if (
-              ctxRef.current.transPref &&
-              v.transmission.toLowerCase() !== ctxRef.current.transPref.toLowerCase()
+              ctx.transPref &&
+              v.transmission.toLowerCase() !== ctx.transPref.toLowerCase()
             )
               return false;
             return true;
@@ -454,10 +578,10 @@ export function AiAssistant({
             setResults(
               advPool.slice(0, 8).map((v) => ({
                 ...v,
-                reasons: [...new Set([...v.reasons, ...advisorReasons(v, ctxRef.current)])],
+                reasons: [...new Set([...v.reasons, ...advisorReasons(v, ctx)])],
               })),
             );
-            setAssistantLine(advisorIntro(ctxRef.current));
+            reply = advisorIntro(ctx);
           } else {
             // Exact requirement not available in stock
             setMode("none");
@@ -468,11 +592,11 @@ export function AiAssistant({
               rawRequirement: q,
               brand: "",
               model: "",
-              fuel: ctxRef.current.fuelPref,
-              transmission: ctxRef.current.transPref,
-              seatingCapacity: ctxRef.current.seats,
+              fuel: ctx.fuelPref,
+              transmission: ctx.transPref,
+              seatingCapacity: ctx.seats,
               minYear: advParsed.minYear,
-              maxPrice: ctxRef.current.budget,
+              maxPrice: ctx.budget,
               minPrice: null,
               city: "",
               lat: null,
@@ -483,17 +607,14 @@ export function AiAssistant({
             if (id) setRecordId(id);
             setAlternatives(advScored.slice(0, 6));
             setResults([]);
+            reply = advisorGuidance(q, ctx);
           }
         } else {
           // 4. Conversational guidance step (e.g. "Mujhe family ke liye car chahiye", "Petrol ya diesel?", "Meri income 1 lakh hai")
-          setAdvisorActive(true);
-          setAdvisorChips(contextSummary(ctxRef.current));
           setResults([]);
           setMode("general");
-          const guidance = advisorGuidance(q, ctxRef.current);
-          setAssistantLine(guidance);
-          const nextQ = pickQuestion(ctxRef.current);
-          setQuestionUI(nextQ);
+          reply = advisorGuidance(q, ctx);
+          nextQuestion = pickQuestion(ctx);
         }
       }
       setSearched(true);
@@ -501,7 +622,13 @@ export function AiAssistant({
       setError(e instanceof Error ? e.message : "Cars load nahi hui");
       setSearched(true);
     } finally {
-      setLoading(false);
+      if (loadActiveId() === sessionId) {
+        updateSession(sessionId, (s) => ({
+          ...appendMessage(s, "assistant", reply),
+          ctx: nextCtx,
+          question: nextQuestion,
+        }));
+      }
     }
   }
 
@@ -558,6 +685,159 @@ export function AiAssistant({
         )}
 
         <div className={hero ? "" : "p-5 sm:p-7"}>
+          {advisorActive && (
+            <div
+              className={
+                hero
+                  ? "mb-4 flex flex-wrap items-center gap-2"
+                  : "mb-5 flex flex-wrap items-center gap-2 border-b border-stone-100 pb-4"
+              }
+            >
+              <button
+                type="button"
+                data-testid="ai-new-chat"
+                onClick={startNewChat}
+                className={
+                  hero
+                    ? "inline-flex h-11 items-center gap-1 rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/20"
+                    : "inline-flex h-11 items-center gap-1 rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 transition-colors hover:border-brand hover:text-brand"
+                }
+              >
+                + New Chat
+              </button>
+              <button
+                type="button"
+                data-testid="ai-delete-chat"
+                onClick={deleteActiveChat}
+                aria-label="Delete this chat"
+                title="Delete this chat"
+                disabled={!active}
+                className={
+                  hero
+                    ? "inline-flex size-11 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-sm text-white backdrop-blur transition-colors hover:bg-white/20 disabled:opacity-40"
+                    : "inline-flex size-11 items-center justify-center rounded-lg border border-stone-300 bg-white text-sm text-stone-600 transition-colors hover:border-red-300 hover:text-red-600 disabled:opacity-40"
+                }
+              >
+                🗑
+              </button>
+              <span
+                className={
+                  hero
+                    ? "hidden text-xs text-stone-300 sm:inline"
+                    : "hidden text-xs text-stone-400 sm:inline"
+                }
+              >
+                {sessions.length} saved chat{sessions.length === 1 ? "" : "s"}
+              </span>
+              <select
+                data-testid="ai-session-select"
+                aria-label="Open a previous chat"
+                value={active?.id ?? ""}
+                onChange={(e) => openChat(e.target.value)}
+                className={
+                  hero
+                    ? "h-11 w-full min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white sm:w-auto sm:max-w-xs"
+                    : "h-11 w-full min-w-0 rounded-lg border border-stone-300 bg-white px-3 text-sm text-stone-800 sm:w-auto sm:max-w-xs sm:flex-1"
+                }
+              >
+                {sessions.map((s) => (
+                  <option key={s.id} value={s.id} className="text-stone-800">
+                    {s.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {advisorActive && (
+            <div
+              data-testid="ai-transcript"
+              className={
+                hero
+                  ? "no-scrollbar mb-4 max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-white/10 p-3"
+                  : "no-scrollbar mb-5 max-h-80 space-y-2 overflow-y-auto rounded-xl border border-stone-200 bg-stone-50 p-3"
+              }
+            >
+              {active?.messages.map((m) => (
+                <div
+                  key={m.id}
+                  data-testid="ai-msg"
+                  data-role={m.role}
+                  className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
+                >
+                  <p
+                    className={
+                      m.role === "user"
+                        ? "max-w-[85%] rounded-2xl rounded-se-sm bg-brand px-3.5 py-2 text-sm leading-relaxed text-white"
+                        : hero
+                          ? "max-w-[90%] rounded-2xl rounded-ss-sm bg-white/15 px-3.5 py-2 text-sm leading-relaxed text-white"
+                          : "max-w-[90%] rounded-2xl rounded-ss-sm bg-stone-900 px-3.5 py-2 text-sm leading-relaxed text-white"
+                    }
+                  >
+                    {m.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {advisorActive && (active?.messages.length ?? 0) > 1 && !searched && (
+            <p className="mb-4 text-xs text-stone-400">
+              Is chat par ruka tha — nayi request bhejne par live inventory dobara check hogi.
+            </p>
+          )}
+
+          {advisorActive && (
+            <>
+              {advisorChips.length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center gap-1.5">
+                  <span className={hero ? "text-xs font-medium text-stone-300" : "text-xs font-medium text-stone-400"}>
+                    Yaad rakha:
+                  </span>
+                  {advisorChips.map((c) => (
+                    <span
+                      key={c}
+                      data-testid="ai-chip"
+                      className={
+                        hero
+                          ? "rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-stone-200"
+                          : "rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600"
+                      }
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {question && (
+                <div
+                  data-testid="ai-question"
+                  className={
+                    hero
+                      ? "mb-4 rounded-2xl border border-white/20 bg-white/10 p-4"
+                      : "mb-4 rounded-2xl border border-brand/20 bg-white p-4 shadow-sm"
+                  }
+                >
+                  <p className="text-sm font-semibold text-stone-800">{question.text}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {question.replies.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        data-testid="ai-quick-reply"
+                        disabled={loading}
+                        onClick={() => void run(r, false)}
+                        className="rounded-full border border-brand/30 bg-brand/5 px-3.5 py-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-50"
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -599,11 +879,13 @@ export function AiAssistant({
             {(hero ? HERO_HINTS : SUGGESTIONS).map((s) => (
               <button
                 key={s}
-                onClick={() => run(s)}
+                type="button"
+                disabled={loading}
+                onClick={() => void run(s)}
                 className={
                   hero
-                    ? "shrink-0 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-stone-200 backdrop-blur transition-colors hover:bg-white/20 hover:text-white"
-                    : "shrink-0 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:border-brand hover:text-brand"
+                    ? "shrink-0 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-stone-200 backdrop-blur transition-colors hover:bg-white/20 hover:text-white disabled:opacity-50"
+                    : "shrink-0 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
                 }
               >
                 {s}
@@ -618,7 +900,7 @@ export function AiAssistant({
             <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
           )}
 
-          {searched && !error && (
+          {hasPanel && (
             <div
               data-testid="ai-results"
               className={
@@ -638,9 +920,7 @@ export function AiAssistant({
                         : mode === "none"
                           ? "Aapki requirement ke hisaab se matching car stock mein nahi mili"
                           : advisorActive
-                            ? question
-                              ? "Ek chhota sa sawaal, phir suggest karunga"
-                              : "Aapki requirements ke hisaab se relevant options live inventory se"
+                            ? "Aapki requirements ke hisaab se relevant options live inventory se"
                             : `${results.length} suggestion${results.length === 1 ? "" : "s"} live inventory se`}
                 </h3>
                 <button
@@ -808,63 +1088,12 @@ export function AiAssistant({
                 </div>
               ) : (
                 <>
-                  {advisorActive && (
-                    <>
-                      {assistantLine && (
-                        <p className="mt-4 w-fit max-w-full rounded-2xl rounded-ss-sm bg-stone-900 px-4 py-2.5 text-sm leading-relaxed text-white">
-                          {assistantLine}
-                        </p>
-                      )}
-                      {advisorChips.length > 0 && (
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <span className="text-xs font-medium text-stone-400">Yaad rakha:</span>
-                          <span className="flex flex-wrap gap-1.5">
-                            {advisorChips.map((c) => (
-                              <span
-                                key={c}
-                                className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600"
-                              >
-                                {c}
-                              </span>
-                            ))}
-                          </span>
-                        </div>
-                      )}
-                      {question ? (
-                        <div className="mt-4 rounded-2xl border border-brand/20 bg-white p-4 shadow-sm">
-                          <p className="text-sm font-semibold text-stone-800">{question.text}</p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {question.replies.map((r) => (
-                              <button
-                                key={r}
-                                onClick={() => run(r)}
-                                className="rounded-full border border-brand/30 bg-brand/5 px-3.5 py-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand hover:text-white"
-                              >
-                                {r}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                    </>
-                  )}
                   {mode === "close" && (
                     <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
                       Exact match nahi mila, lekin ye close options available hain.
                     </p>
                   )}
-                  {results.length === 0 && !question ? (
-                    <div className="mt-4 rounded-xl border border-dashed border-stone-300 bg-white px-6 py-10 text-center">
-                      <span className="text-3xl">🛻</span>
-                      <p className="mt-2 text-sm font-medium text-stone-700">
-                        Abhi in requirements se koi car match nahi karti.
-                      </p>
-                      <p className="mx-auto mt-1 max-w-sm text-sm text-stone-500">
-                        Zyada budget try karo, fuel/year filters hatao, ya full marketplace dekho. Agar koi
-                        field available nahi thi, to AI ne guess karne ki bajaye bata diya.
-                      </p>
-                    </div>
-                  ) : results.length > 0 ? (
+                  {results.length > 0 && (
                     <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {results.map((car) => (
                         <div key={car.id} className="flex flex-col">
@@ -897,7 +1126,7 @@ export function AiAssistant({
                         </div>
                       ))}
                     </div>
-                  ) : null}
+                  )}
                 </>
               )}
             </div>
