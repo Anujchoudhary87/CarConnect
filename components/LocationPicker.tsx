@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Button, Spinner } from "@/components/ui";
+import { useDeviceLocation } from "@/lib/use-device-location";
 
 const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
   ssr: false,
@@ -12,6 +13,19 @@ const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
     </div>
   ),
 });
+
+// Same map, but a small placeholder so the compact layout does not jump
+// when the tile bundle finishes loading.
+const LeafletMapCompact = dynamic(() => import("@/components/map/LeafletMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-44 items-center justify-center rounded-lg border border-stone-200 bg-stone-50">
+      <Spinner label="Map load ho raha hai…" />
+    </div>
+  ),
+});
+
+const COMPACT_MAP_HEIGHT = 176;
 
 export interface PickedLocation {
   lat: number;
@@ -24,17 +38,21 @@ export function LocationPicker({
   lat = null,
   lng = null,
   label = "",
+  compact = false,
   onChange,
 }: {
   lat?: number | null;
   lng?: number | null;
   label?: string;
+  /** Mobile-first layout: full-width search, small collapsible map preview. */
+  compact?: boolean;
   onChange: (loc: PickedLocation) => void;
 }) {
   const [query, setQuery] = useState(label);
   const [suggestions, setSuggestions] = useState<PickedLocation[]>([]);
   const [searching, setSearching] = useState(false);
-  const [locating, setLocating] = useState(false);
+  const { locating, error: locateError, locate } = useDeviceLocation();
+  const [showMap, setShowMap] = useState(!compact);
   const [picked, setPicked] = useState<PickedLocation | null>(
     lat && lng ? { lat, lng, label, city: "" } : null,
   );
@@ -65,30 +83,24 @@ export function LocationPicker({
   }
 
   async function useMyLocation() {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 }),
-      );
-      const { latitude, longitude } = pos.coords;
-      let result: PickedLocation = { lat: latitude, lng: longitude, label: "My location", city: "" };
-      try {
-        const res = await fetch(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`);
-        const data = await res.json();
-        if (data.label) result = { lat: latitude, lng: longitude, label: data.label, city: data.city ?? "" };
-      } catch {}
-      handlePick(result);
-    } catch {
-      console.warn("Location permission denied");
-    } finally {
-      setLocating(false);
-    }
+    const point = await locate();
+    if (!point) return;
+    handlePick({
+      lat: point.lat,
+      lng: point.lng,
+      // Without a reverse-geocode hit the point still has to be visible.
+      label: point.label || "My current location",
+      city: point.city,
+    });
   }
+
+  const mapLat = picked?.lat ?? lat;
+  const mapLng = picked?.lng ?? lng;
+  const hasPoint = Boolean(mapLat && mapLng);
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
+      <div className={compact ? "space-y-2" : "flex gap-2"}>
         <div className="relative flex-1">
           <input
             type="text"
@@ -119,16 +131,46 @@ export function LocationPicker({
             </ul>
           )}
         </div>
-        <Button type="button" variant="outline" onClick={useMyLocation} loading={locating}>
-          📍 Meri Location
+        <Button
+          type="button"
+          variant="outline"
+          onClick={useMyLocation}
+          loading={locating}
+          className={compact ? "w-full" : undefined}
+        >
+          📍 {compact ? "Use My Location" : "Meri Location"}
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-stone-200">
-        <LeafletMap lat={picked?.lat ?? lat} lng={picked?.lng ?? lng} onDrag={handlePick} />
-      </div>
+      {compact && (
+        <button
+          type="button"
+          onClick={() => setShowMap((s) => !s)}
+          aria-expanded={showMap}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 transition-colors hover:bg-stone-50"
+        >
+          🗺 {showMap ? "Map chhupao" : "Map pe pin adjust karo"}
+          {!hasPoint && <span className="font-normal text-stone-400">(pehle location chuno)</span>}
+        </button>
+      )}
+
+      {(!compact || showMap) && (
+        <div className="overflow-hidden rounded-lg border border-stone-200">
+          {compact ? (
+            <LeafletMapCompact
+              lat={mapLat}
+              lng={mapLng}
+              onDrag={handlePick}
+              height={COMPACT_MAP_HEIGHT}
+            />
+          ) : (
+            <LeafletMap lat={mapLat} lng={mapLng} onDrag={handlePick} />
+          )}
+        </div>
+      )}
 
       {picked?.label && <p className="text-xs text-stone-500">📍 {picked.label}</p>}
+      {locateError && <p className="text-xs text-amber-700">{locateError}</p>}
       <p className="text-[11px] text-stone-400">
         Map data © <a className="underline" href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors
       </p>

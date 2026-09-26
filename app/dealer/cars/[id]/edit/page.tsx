@@ -35,6 +35,13 @@ export default async function EditCarPage({
     <div>
       <h2 className="mb-4 text-lg font-bold text-stone-900">Edit Car</h2>
       <CarForm
+        dealerLocation={{
+          city: dealer.city,
+          state: dealer.state,
+          address: dealer.address,
+          lat: dealer.lat,
+          lng: dealer.lng,
+        }}
         initial={{
           vehicle: vehicle as Vehicle,
           images: ((images ?? []) as VehicleImage[]).map((i) => i.url),

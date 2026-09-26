@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CarGallery } from "@/components/CarGallery";
 import { ContactBar } from "@/components/ContactBar";
-import { StaticMap } from "@/components/StaticMap";
 import { Card, Badge } from "@/components/ui";
 import { EMICalculator } from "@/components/EMICalculator";
+import { DealerLocationCard } from "@/components/DealerLocationCard";
 import { APP_URL } from "@/lib/env";
 import { formatINR, formatKm, formatLakh, ownerLabel, timeAgo } from "@/lib/format";
 import { sortVehicleImages } from "@/lib/poster/sort";
@@ -209,13 +209,6 @@ export default async function CarDetailPage({
               </div>
             )}
           </Card>
-
-          {car.lat && car.lng && (
-            <Card className="mt-5 p-5">
-              <h2 className="mb-3 font-semibold text-stone-900">Location</h2>
-              <StaticMap lat={car.lat} lng={car.lng} />
-            </Card>
-          )}
         </div>
 
         <aside className="space-y-4">
@@ -257,20 +250,17 @@ export default async function CarDetailPage({
           {dealerRow && (
             <Card className="p-5">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="font-semibold text-stone-900">{dealerRow.dealership_name}</h3>
-                  <p className="text-sm text-stone-500">
-                    {dealerRow.city}
-                    {dealerRow.state ? `, ${dealerRow.state}` : ""}
-                  </p>
-                </div>
+                <h3 className="font-semibold text-stone-900">{dealerRow.dealership_name}</h3>
                 {dealerRow.verified && (
-                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700">
+                  <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700">
                     ✓ Verified
                   </span>
                 )}
               </div>
               {dealerRow.bio && <p className="mt-3 text-sm text-stone-600">{dealerRow.bio}</p>}
+              {/* Single location UI: no embedded map, just the saved office
+                  address and an exact-pin Google Maps link. */}
+              <DealerLocationCard dealer={dealerRow} />
             </Card>
           )}
 

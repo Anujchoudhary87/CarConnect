@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { VehicleInput } from "./vehicles-input";
 import { validateInput } from "./vehicles-input";
+import { resolveVehicleLocation } from "@/lib/vehicle-location";
 import { runDemandMatching } from "@/lib/demand-api";
 
 export async function POST(request: NextRequest) {
@@ -17,12 +18,16 @@ export async function POST(request: NextRequest) {
 
   const { data: dealer } = await supabase
     .from("dealers")
-    .select("id")
+    .select("id, city, state, address, lat, lng")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!dealer) {
     return Response.json({ error: "Set up your dealer profile first" }, { status: 400 });
   }
+
+  // The dealer's saved profile location is the default for every new listing.
+  // A dealer only has to send coordinates when they override it for this car.
+  const location = resolveVehicleLocation(dealer, body);
 
   const { data: vehicle, error } = await supabase
     .from("vehicles")
@@ -41,10 +46,12 @@ export async function POST(request: NextRequest) {
         down_payment: body.down_payment ?? null,
         finance_interest_rate: body.finance_interest_rate ?? null,
         seating_capacity: body.seating_capacity ?? null,
-        city: body.city ?? "",
+        city: location.city,
+        state: location.state,
+        address: location.address,
         description: body.description ?? "",
-        lat: body.lat ?? null,
-        lng: body.lng ?? null,
+        lat: location.lat,
+        lng: location.lng,
         status: "active",
       },
     ])

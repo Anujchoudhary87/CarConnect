@@ -5,7 +5,42 @@ import { useRouter } from "next/navigation";
 import type { Dealer, Vehicle } from "@/lib/types";
 import { Button, Card, Input, Label, Textarea } from "@/components/ui";
 import { ShareButton } from "@/components/ShareButton";
-import { telLink, whatsappLink } from "@/lib/format";
+import { formatINR, ownerLabel, telLink, whatsappLink } from "@/lib/format";
+import { publicVehicleUrl } from "@/lib/share";
+
+function buildVehicleWhatsAppMessage(vehicle: Vehicle): string {
+  const carName = [vehicle.brand, vehicle.model, vehicle.variant].filter(Boolean).join(" ");
+  const specs = [
+    vehicle.year ? `📅 ${vehicle.year}` : "",
+    vehicle.fuel ? `⛽ ${vehicle.fuel}` : "",
+    vehicle.transmission ? `⚙️ ${vehicle.transmission}` : "",
+  ].filter(Boolean).join(" | ");
+  const hasPrice = vehicle.price != null && Number.isFinite(Number(vehicle.price));
+  const hasDownPayment = vehicle.down_payment != null && Number.isFinite(Number(vehicle.down_payment));
+  const hasFinance = hasDownPayment ||
+    (vehicle.finance_interest_rate != null && Number.isFinite(Number(vehicle.finance_interest_rate)));
+
+  const lines: Array<string | null> = [
+    "👋 Hi, main Car Connect par aapki car dekh raha tha.",
+    "",
+    carName ? `🚗 ${carName}` : null,
+    specs || null,
+    vehicle.owner ? `👤 ${ownerLabel(vehicle.owner)}` : null,
+    vehicle.city ? `📍 ${vehicle.city}` : null,
+    hasPrice ? `💰 ${formatINR(vehicle.price)}` : null,
+    hasDownPayment ? `💳 Down Payment: ${formatINR(vehicle.down_payment)}` : null,
+    hasFinance ? "🏦 Finance Available" : null,
+    "",
+    "Mujhe is car mein interest hai. Please iski availability aur final price confirm kar dein.",
+    "",
+    "🔗 Car Details:",
+    publicVehicleUrl(vehicle.id),
+    "",
+    "— Car Connect",
+  ];
+
+  return lines.filter((line): line is string => line !== null).join("\n");
+}
 
 export function ContactBar({
   vehicle,
@@ -108,7 +143,7 @@ export function ContactBar({
               📞 Call Dealer
             </a>
             <a
-              href={whatsappLink(phone, `Hi, main ${vehicle.brand} ${vehicle.model} (${vehicle.year}) ke baare mein poochh raha tha.`)}
+              href={whatsappLink(phone, buildVehicleWhatsAppMessage(vehicle))}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"

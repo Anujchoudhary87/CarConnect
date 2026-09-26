@@ -61,6 +61,8 @@ export interface Vehicle {
   finance_interest_rate: number | null;
   seating_capacity: number | null;
   city: string;
+  state: string;
+  address: string;
   description: string;
   lat: number | null;
   lng: number | null;

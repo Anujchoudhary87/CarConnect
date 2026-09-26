@@ -281,7 +281,7 @@ export function Carousel({
             type="button"
             onClick={() => prevRef.current()}
             aria-label="Previous"
-            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full border border-stone-200/70 bg-white/90 p-2.5 text-stone-700 shadow-md backdrop-blur transition-colors hover:bg-white hover:text-brand disabled:opacity-40"
+            className="absolute left-2 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full border border-stone-200/70 bg-white/90 p-2.5 text-stone-700 shadow-md backdrop-blur transition-colors hover:bg-white hover:text-brand disabled:opacity-40 sm:flex"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M10 3 5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -291,7 +291,7 @@ export function Carousel({
             type="button"
             onClick={() => nextRef.current()}
             aria-label="Next"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-stone-200/70 bg-white/90 p-2.5 text-stone-700 shadow-md backdrop-blur transition-colors hover:bg-white hover:text-brand disabled:opacity-40"
+            className="absolute right-2 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full border border-stone-200/70 bg-white/90 p-2.5 text-stone-700 shadow-md backdrop-blur transition-colors hover:bg-white hover:text-brand disabled:opacity-40 sm:flex"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -301,7 +301,7 @@ export function Carousel({
       )}
 
       {loop && count > 0 && (
-        <div className="mt-3 flex h-2 items-center justify-center gap-1.5">
+        <div className="mt-3 hidden h-2 items-center justify-center gap-1.5 sm:flex">
           {Array.from({ length: Math.min(count, 8) }).map((_, i) => (
             <span
               key={i}

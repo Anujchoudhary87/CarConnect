@@ -193,7 +193,11 @@ create table public.vehicles (
   down_payment numeric(12, 2) check (down_payment >= 0),
   finance_interest_rate numeric(4, 2) check (finance_interest_rate >= 0 and finance_interest_rate <= 30),
   seating_capacity integer check (seating_capacity is null or seating_capacity > 0),
+  -- Location is copied from the dealer's profile location on create, but stays
+  -- on the listing so a single car can override it without touching the dealer.
   city text default '',
+  state text default '',
+  address text default '',
   description text default '',
   lat double precision,
   lng double precision,
@@ -220,6 +224,11 @@ create index vehicles_seating_idx on public.vehicles (seating_capacity);
 alter table public.vehicles
   add column if not exists seating_capacity integer
     check (seating_capacity is null or seating_capacity > 0);
+
+-- Dealer location as the default listing location (idempotent for upgrades).
+alter table public.vehicles
+  add column if not exists state text default '',
+  add column if not exists address text default '';
 
 alter table public.vehicles enable row level security;
 

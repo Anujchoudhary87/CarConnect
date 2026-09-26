@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HomeHero } from "@/components/HomeHero";
+import { HomeQuickActions } from "@/components/HomeQuickActions";
 import { HomeSections } from "@/components/HomeSections";
 import { ButtonLink } from "@/components/ui";
 import { APP_URL } from "@/lib/env";
@@ -116,9 +117,10 @@ export default async function Home() {
   return (
     <div>
       <HomeHero />
+      <HomeQuickActions />
 
       {/* Live inventory carousels */}
-      <div className="mx-auto max-w-6xl px-4 pt-6 pb-2 space-y-10">
+      <div className="mx-auto max-w-6xl space-y-8 px-4 pt-5 pb-2 md:space-y-10">
         <HomeSections
           newest={featured}
           recentlyAdded={recent}
@@ -130,7 +132,7 @@ export default async function Home() {
       {brands.length > 0 && (
         <section
           id="popular-brands"
-          className="mx-auto max-w-6xl scroll-mt-24 px-4 py-8"
+          className="mx-auto max-w-6xl scroll-mt-24 px-4 py-6 md:py-8"
         >
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -189,7 +191,7 @@ export default async function Home() {
         className="mx-auto max-w-6xl scroll-mt-24 px-4 py-8"
       >
         <div className="overflow-hidden rounded-3xl bg-stone-950">
-          <div className="grid items-center gap-8 px-8 py-10 sm:px-12 lg:grid-cols-[1.2fr_1fr]">
+          <div className="grid items-center gap-8 px-5 py-7 sm:px-12 sm:py-10 lg:grid-cols-[1.2fr_1fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-brand-light">
                 Sell your car
@@ -241,7 +243,7 @@ export default async function Home() {
         id="customer-demand"
         className="mx-auto max-w-6xl scroll-mt-24 px-4 py-8"
       >
-        <div className="grid items-center gap-8 rounded-3xl bg-brand-light p-8 sm:p-10 lg:grid-cols-2">
+        <div className="grid items-center gap-8 rounded-3xl bg-brand-light p-5 sm:p-10 lg:grid-cols-2">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-brand">
               Customer demand
@@ -301,7 +303,7 @@ export default async function Home() {
       {/* Why Car Connect */}
       <section
         id="why-car-connect"
-        className="mx-auto max-w-6xl scroll-mt-24 px-4 py-10"
+          className="mx-auto max-w-6xl scroll-mt-24 px-4 py-8 md:py-10"
       >
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-brand">

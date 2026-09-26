@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Dealer, DealerVerification } from "@/lib/types";
 import { Button, Card, FieldError, Input, Label, Select, Spinner, Textarea } from "@/components/ui";
-import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
+import { DealerLocationSection } from "@/components/DealerLocationSection";
 import { DocUpload } from "@/components/DocUpload";
 import { BUSINESS_TYPES } from "@/lib/constants";
+import { hasCoordinates } from "@/lib/location";
 
 const empty = {
   dealership_name: "",
@@ -30,10 +31,14 @@ export function DealerProfileForm() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [locationLabel, setLocationLabel] = useState("");
   const [idProof, setIdProof] = useState("");
   const [businessProof, setBusinessProof] = useState("");
   const [verifNotes, setVerifNotes] = useState("");
+  // Dealer profile setup is only complete once an office location is saved.
+  // Seeded from the server value so an already-configured dealer is not forced
+  // through the flow again on every profile visit.
+  const [officeSaved, setOfficeSaved] = useState(false);
+  const [isNewDealer, setIsNewDealer] = useState(true);
 
   useEffect(() => {
     fetch("/api/dealer/profile")
@@ -56,7 +61,8 @@ export function DealerProfileForm() {
             lng: de.lng,
             bio: de.bio,
           });
-          setLocationLabel(de.city || "");
+          setIsNewDealer(false);
+          setOfficeSaved(Boolean(de.city?.trim()) && hasCoordinates(de));
         }
       })
       .finally(() => setLoading(false));
@@ -76,8 +82,35 @@ export function DealerProfileForm() {
   const set = (key: keyof typeof empty) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  // Saves only the location columns of the caller's own dealer row, so the
+  // office location can be updated later without re-saving the whole profile.
+  // `applyToExisting` is forwarded only when the dealer explicitly asked for it.
+  async function saveLocation({ applyToExisting }: { applyToExisting: boolean }) {
+    const res = await fetch("/api/dealer/location", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        city: form.city,
+        state: form.state,
+        address: form.address,
+        lat: form.lat,
+        lng: form.lng,
+        apply_to_existing: applyToExisting,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Office location save nahi hui");
+    setOfficeSaved(true);
+    router.refresh();
+    return { updatedListings: data.updatedListings as number | undefined };
+  }
+
   async function save() {
     setError("");
+    if (!officeSaved) {
+      setError("Pehle 📍 Office Location save karo — profile tabhi save hoga.");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/dealer/profile", {
@@ -119,7 +152,8 @@ export function DealerProfileForm() {
       <h1 className="text-2xl font-bold text-stone-900">Become a Dealer 🏪</h1>
       <p className="mt-1 text-sm text-stone-500">
         Apni dealership ki details bharo. Verification ke baad aap customers ko dikhayi doge aur unki
-        sell-your-car listings par offers bhej sakoge.
+        sell-your-car listings par offers bhej sakoge. 📍 Office Location zaroori hai — wahi har nayi
+        listing ka default location banega.
       </p>
 
       <div className="mt-6 space-y-6">
@@ -158,18 +192,6 @@ export function DealerProfileForm() {
               <Label htmlFor="gstin">GSTIN (optional)</Label>
               <Input id="gstin" value={form.gstin} onChange={set("gstin")} placeholder="22AAAAA0000A1Z5" />
             </div>
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input id="city" value={form.city} onChange={set("city")} placeholder="Jaipur" />
-            </div>
-            <div>
-              <Label htmlFor="state">State</Label>
-              <Input id="state" value={form.state} onChange={set("state")} placeholder="Rajasthan" />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="address">Address</Label>
-              <Input id="address" value={form.address} onChange={set("address")} placeholder="Shop number, area, city" />
-            </div>
             <div className="sm:col-span-2">
               <Label htmlFor="bio">About your dealership</Label>
               <Textarea id="bio" rows={3} value={form.bio} onChange={set("bio")} placeholder="Kuch lines apni dealership ke baare mein…" />
@@ -177,21 +199,21 @@ export function DealerProfileForm() {
           </div>
         </Card>
 
-        <Card className="p-5">
-          <h2 className="font-semibold text-stone-900">Location (map pe pin karo)</h2>
-          <p className="mt-1 text-xs text-stone-400">Isse customers ko distance dikhayi degi.</p>
-          <div className="mt-4">
-            <LocationPicker
-              lat={form.lat}
-              lng={form.lng}
-              label={locationLabel}
-              onChange={(loc: PickedLocation) => {
-                setForm((f) => ({ ...f, lat: loc.lat, lng: loc.lng, city: loc.city || f.city }));
-                setLocationLabel(loc.label);
-              }}
-            />
-          </div>
-        </Card>
+        <DealerLocationSection
+          value={{ city: form.city, state: form.state, address: form.address, lat: form.lat, lng: form.lng }}
+          onChange={(loc) =>
+            setForm((f) => ({
+              ...f,
+              city: loc.city,
+              state: loc.state,
+              address: loc.address,
+              lat: loc.lat,
+              lng: loc.lng,
+            }))
+          }
+          onSave={saveLocation}
+          hint="Yehi office location har nayi gaadi ka default banega. Baad mein kabhi bhi yahan change kar sakte ho — purani listings apni location retain karengi."
+        />
 
         <Card className="p-5">
           <h2 className="font-semibold text-stone-900">Verification Documents</h2>
@@ -222,13 +244,20 @@ export function DealerProfileForm() {
         <FieldError message={error} />
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button variant="outline" onClick={() => router.push("/dealer")}>
-            Abhi skip karo
-          </Button>
-          <Button onClick={save} loading={saving}>
+          {!isNewDealer && (
+            <Button variant="outline" onClick={() => router.push("/dealer")}>
+              Cancel
+            </Button>
+          )}
+          <Button onClick={save} loading={saving} disabled={!officeSaved}>
             Dealer Profile Save Karo →
           </Button>
         </div>
+        {!officeSaved && (
+          <p className="text-right text-xs text-amber-700">
+            Profile save karne se pehle office location set karke save karo.
+          </p>
+        )}
       </div>
     </div>
   );

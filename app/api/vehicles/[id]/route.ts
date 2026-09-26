@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { VehicleInput } from "../vehicles-input";
 import { validateInput } from "../vehicles-input";
+import { resolveVehicleLocation } from "@/lib/vehicle-location";
 
 export async function PUT(request: NextRequest, ctx: RouteContext<"/api/vehicles/[id]">) {
   const { id } = await ctx.params;
@@ -13,14 +14,14 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/vehicles
 
   const { data: dealer } = await supabase
     .from("dealers")
-    .select("id")
+    .select("id, city, state, address, lat, lng")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!dealer) return Response.json({ error: "Dealer profile missing" }, { status: 400 });
 
   const { data: existing } = await supabase
     .from("vehicles")
-    .select("id, price")
+    .select("id, price, city, state, address, lat, lng")
     .eq("id", id)
     .eq("dealer_id", dealer.id)
     .maybeSingle();
@@ -29,6 +30,12 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/vehicles
   const body = (await request.json()) as VehicleInput;
   const err = validateInput(body);
   if (err) return Response.json({ error: err }, { status: 400 });
+
+  // This listing keeps its own copy of the location: sending coordinates is a
+  // per-vehicle override, a request that says nothing about location keeps what
+  // the listing already has, and anything else falls back to the dealer profile.
+  // The dealer profile itself is never written here.
+  const location = resolveVehicleLocation(dealer, body, existing);
 
   const oldPrice = Number(existing.price ?? 0);
   const newPrice = Number(body.price);
@@ -49,10 +56,12 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/vehicles
       down_payment: body.down_payment ?? null,
       finance_interest_rate: body.finance_interest_rate ?? null,
       seating_capacity: body.seating_capacity ?? null,
-      city: body.city ?? "",
+      city: location.city,
+      state: location.state,
+      address: location.address,
       description: body.description ?? "",
-      lat: body.lat ?? null,
-      lng: body.lng ?? null,
+      lat: location.lat,
+      lng: location.lng,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

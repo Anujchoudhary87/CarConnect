@@ -6,15 +6,19 @@ import { useState } from "react";
 import type { VehicleWithInfo } from "@/lib/types";
 import { formatKm, formatPriceShort, ownerLabel } from "@/lib/format";
 import { distanceLabel } from "@/lib/geo";
+import { cn } from "@/components/ui";
 
 export function CarCard({
   car,
   onToggleFavorite,
   badge,
+  compact = false,
 }: {
   car: VehicleWithInfo;
   onToggleFavorite?: (car: VehicleWithInfo, favorite: boolean) => void;
   badge?: string;
+  /** Denser card for the homepage rails — same data and links. */
+  compact?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const router = useRouter();
@@ -56,9 +60,17 @@ export function CarCard({
   return (
     <Link
       href={`/cars/${car.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+      className={cn(
+        "group flex h-full flex-col overflow-hidden border border-stone-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg",
+        compact ? "rounded-xl" : "rounded-2xl",
+      )}
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-stone-100 to-stone-200">
+      <div
+        className={cn(
+          "relative overflow-hidden bg-gradient-to-br from-stone-100 to-stone-200",
+          compact ? "aspect-[16/9]" : "aspect-[16/10]",
+        )}
+      >
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -107,23 +119,45 @@ export function CarCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-3.5">
+      <div className={cn("flex flex-1 flex-col p-3.5", compact && "p-2.5 sm:p-3")}>
         <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-1 font-bold leading-snug text-stone-900">
+          <h3
+            className={cn(
+              "line-clamp-1 font-bold leading-snug text-stone-900",
+              compact && "text-sm",
+            )}
+          >
             {car.brand} {car.model}
             {car.variant && (
               <span className="font-normal text-stone-500"> {car.variant}</span>
             )}
           </h3>
         </div>
-        <p className="mt-1 text-lg font-extrabold tracking-tight text-brand-dark">
+        <p
+          className={cn(
+            "mt-1 text-lg font-extrabold tracking-tight text-brand-dark",
+            compact && "text-base",
+          )}
+        >
           {formatPriceShort(car.price)}
         </p>
-        <p className="mt-1 line-clamp-1 text-xs text-stone-500">{specs.join(" • ")}</p>
+        <p
+          className={cn(
+            "mt-1 line-clamp-1 text-xs text-stone-500",
+            compact && "text-[11px]",
+          )}
+        >
+          {specs.join(" • ")}
+        </p>
 
         <div className="min-h-3 flex-1" />
 
-        <div className="flex items-center justify-between gap-2 border-t border-stone-100 pt-2.5">
+        <div
+          className={cn(
+            "flex items-center justify-between gap-2 border-t border-stone-100 pt-2.5",
+            compact && "pt-2",
+          )}
+        >
           <span className="flex min-w-0 items-center gap-1 text-xs text-stone-600">
             <span aria-hidden>📍</span>
             <span className="truncate">{car.city || "India"}</span>
@@ -136,7 +170,12 @@ export function CarCard({
               </span>
             )}
           </span>
-          <span className="shrink-0 text-xs font-bold text-brand transition-colors group-hover:text-brand-dark">
+          <span
+            className={cn(
+              "shrink-0 text-xs font-bold text-brand transition-colors group-hover:text-brand-dark",
+              compact && "hidden lg:inline",
+            )}
+          >
             View Car →
           </span>
         </div>

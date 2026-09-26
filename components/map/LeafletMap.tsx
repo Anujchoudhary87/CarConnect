@@ -26,11 +26,13 @@ export default function LeafletMap({
   lng = null,
   onDrag,
   interactive = true,
+  height = 260,
 }: {
   lat?: number | null;
   lng?: number | null;
   onDrag?: (loc: { lat: number; lng: number; label: string; city: string }) => void;
   interactive?: boolean;
+  height?: number;
 }) {
   const [position, setPosition] = useState<[number, number]>(() =>
     lat && lng ? [lat, lng] : [20.5937, 78.9629],
@@ -62,7 +64,7 @@ export default function LeafletMap({
   }
 
   return (
-    <div style={{ height: "260px" }} className="relative">
+    <div style={{ height: `${height}px` }} className="relative">
       <MapContainer
         center={position}
         zoom={lat && lng ? 12 : 5}

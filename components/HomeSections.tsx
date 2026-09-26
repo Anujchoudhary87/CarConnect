@@ -14,6 +14,15 @@ import { Carousel, type CarouselColumn } from "@/components/Carousel";
 const RADII = ["5", "20", "50", "100", "150", "200", "200+"];
 const NEARBY_RADIUS = "100";
 
+// Compact cards on phones (1.7 per view ≈ one full car + a peek at the next),
+// widening to the existing desktop density.
+const RAIL_BREAKPOINTS = [
+  { max: 639, perView: 1.7 },
+  { max: 1023, perView: 2.3 },
+  { max: 1279, perView: 3.3 },
+  { max: Number.POSITIVE_INFINITY, perView: 4.25 },
+];
+
 export function HomeSections({
   newest,
   recentlyAdded,
@@ -45,6 +54,7 @@ export function HomeSections({
           }}
           onToggleFavorite={onToggleFavorite}
           badge={badges?.[car.id]}
+          compact
         />
       ),
     }));
@@ -68,10 +78,11 @@ export function HomeSections({
             subtitle="Dealers ki sabse nayi active listings."
             seeAllHref="/marketplace"
           />
-          <div className="mt-5">
+          <div className="mt-3 sm:mt-5">
             <Carousel
               ariaLabel="recently added cars"
-              autoMs={900}
+              autoMs={1000}
+              breakpoints={RAIL_BREAKPOINTS}
               columns={toColumns(recentlyAdded ?? newest)}
             />
           </div>
@@ -94,11 +105,13 @@ function SectionHeader({
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-brand">{eyebrow}</p>
-        <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">
+        <p className="hidden text-xs font-bold uppercase tracking-widest text-brand sm:block">
+          {eyebrow}
+        </p>
+        <h2 className="mt-1 text-xl font-extrabold tracking-tight text-stone-900 sm:text-2xl lg:text-3xl">
           {title}
         </h2>
-        {subtitle && <p className="mt-1 text-sm text-stone-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 hidden text-sm text-stone-500 sm:block">{subtitle}</p>}
       </div>
       <Link
         href={seeAllHref}
@@ -175,27 +188,24 @@ function NearbySection({
     return () => window.removeEventListener(LOCATION_EVENT, onLoc);
   }, []);
 
-  const subtitle = "Nearby cars to you";
+  const subtitle = "Live dealer stock around you";
 
   return (
     <section id={sectionId} className="scroll-mt-24">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-brand">Local discovery</p>
-          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">
-            Nearby Cars
-          </h2>
-          <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl font-extrabold tracking-tight text-stone-900 sm:text-2xl lg:text-3xl">
+          Cars Near You
+        </h2>
         <Link
           href="/marketplace"
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-semibold text-brand transition-colors hover:text-brand-dark"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-semibold text-brand transition-colors hover:text-brand-dark"
         >
           View All →
         </Link>
       </div>
+      <p className="mt-1 hidden text-sm text-stone-500 sm:block">{subtitle}</p>
 
-      <div className="no-scrollbar mt-4 flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="no-scrollbar mt-3 flex items-center gap-2 overflow-x-auto pb-1">
         <span className="shrink-0 py-1.5 text-xs font-semibold text-stone-400">Radius:</span>
         <button
           onClick={() => setRadius(null)}
@@ -233,11 +243,11 @@ function NearbySection({
         ))}
       </div>
 
-      <div className="mt-5">
+      <div className="mt-2.5 sm:mt-4">
         {cars === null && !error ? (
           <CarouselSkeleton />
         ) : cars && cars.length === 0 ? (
-          <div className="flex flex-col items-center rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-14 text-center">
+          <div className="flex flex-col items-center rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-9 text-center sm:py-14">
             <span className="text-4xl">🛻</span>
             <h3 className="mt-3 text-lg font-bold text-stone-900">Abhi aas-paas cars nahi mili</h3>
             <p className="mt-1 max-w-sm text-sm text-stone-500">
@@ -254,7 +264,8 @@ function NearbySection({
         ) : (
           <Carousel
             ariaLabel="cars near you"
-            autoMs={1200}
+            autoMs={1000}
+            breakpoints={RAIL_BREAKPOINTS}
             columns={(cars ?? []).map((car) => ({
               id: car.id,
               node: (
@@ -264,6 +275,7 @@ function NearbySection({
                     is_favorite: favState[car.id] ?? car.is_favorite,
                   }}
                   onToggleFavorite={onToggleFavorite}
+                  compact
                 />
               ),
             }))}
@@ -275,14 +287,19 @@ function NearbySection({
 }
 
 function CarouselSkeleton() {
+  // Mirrors the rail card width (RAIL_BREAKPOINTS) so the first screen stays
+  // compact and the swap to real cards does not jump.
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="no-scrollbar flex gap-4 overflow-x-auto pb-1">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
-          <div className="skeleton aspect-[16/10]" />
-          <div className="space-y-2 p-4">
-            <div className="skeleton h-4 w-3/4 rounded" />
-            <div className="skeleton h-5 w-1/3 rounded" />
+        <div
+          key={i}
+          className="w-[57%] shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-white sm:w-[42%] lg:w-[29%] xl:w-[22%]"
+        >
+          <div className="skeleton aspect-[16/9]" />
+          <div className="space-y-2 p-2.5">
+            <div className="skeleton h-3.5 w-3/4 rounded" />
+            <div className="skeleton h-4 w-1/2 rounded" />
             <div className="skeleton h-3 w-2/3 rounded" />
           </div>
         </div>

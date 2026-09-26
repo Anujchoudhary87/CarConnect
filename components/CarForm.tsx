@@ -14,17 +14,38 @@ import {
 } from "@/components/ui";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { LocationPicker, type PickedLocation } from "@/components/LocationPicker";
+import { dealerDefaultLocation } from "@/lib/vehicle-location";
+import { locationText, sameLocation, type LocationValue } from "@/lib/location";
 import { BRANDS, FUELS, OWNERS, TRANSMISSIONS, yearOptions } from "@/lib/constants";
 import { formatINR } from "@/lib/format";
 
 interface CarFormProps {
   initial?: { vehicle: Vehicle; images: string[] };
+  /** Dealer's saved business location, used as this listing's default. */
+  dealerLocation?: { city: string; state: string; address: string; lat: number | null; lng: number | null };
 }
 
-export function CarForm({ initial }: CarFormProps) {
+function toValue(v: { city?: string | null; state?: string | null; address?: string | null; lat?: number | null; lng?: number | null }): LocationValue {
+  return {
+    city: (v.city ?? "").trim(),
+    state: (v.state ?? "").trim(),
+    address: (v.address ?? "").trim(),
+    lat: v.lat ?? null,
+    lng: v.lng ?? null,
+  };
+}
+
+export function CarForm({ initial, dealerLocation }: CarFormProps) {
   const router = useRouter();
   const editing = Boolean(initial);
   const v = initial?.vehicle;
+
+  const dealerLoc = dealerDefaultLocation(dealerLocation);
+  const dealerHasLocation = Boolean(dealerLoc.city || dealerLoc.state || dealerLoc.lat !== null);
+  // A listing starts from the dealer's location unless the saved vehicle has a
+  // different one (a per-vehicle override from an earlier edit).
+  const savedLoc = toValue(v ?? {});
+  const startsFromDealer = dealerHasLocation && (!editing || sameLocation(savedLoc, dealerLoc));
 
   const [form, setForm] = useState({
     brand: v?.brand ?? "",
@@ -39,12 +60,12 @@ export function CarForm({ initial }: CarFormProps) {
     downPayment: v?.down_payment?.toString() ?? "",
     financeRate: v?.finance_interest_rate?.toString() ?? "",
     seatingCapacity: v?.seating_capacity?.toString() ?? "",
-    city: v?.city ?? "",
     description: v?.description ?? "",
   });
-  const [lat, setLat] = useState<number | null>(v?.lat ?? null);
-  const [lng, setLng] = useState<number | null>(v?.lng ?? null);
-  const [locationLabel, setLocationLabel] = useState(v?.city ?? "");
+  const [location, setLocation] = useState<LocationValue>(
+    editing ? savedLoc : (dealerLoc.city || dealerLoc.state ? dealerLoc : savedLoc),
+  );
+  const [customLocation, setCustomLocation] = useState(editing && !startsFromDealer);
   const [images, setImages] = useState<string[]>(initial?.images ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -65,6 +86,10 @@ export function CarForm({ initial }: CarFormProps) {
 
     setSaving(true);
     try {
+      // A location is only sent when this car really has one of its own. With no
+      // per-car override the server copies the dealer's CURRENT office location,
+      // so a default changed after this form was opened still applies.
+      const sendLocation = customLocation || !dealerHasLocation;
       const payload = {
         ...form,
         year: Number(form.year),
@@ -73,8 +98,15 @@ export function CarForm({ initial }: CarFormProps) {
         down_payment: form.downPayment.trim() === "" ? null : Number(form.downPayment),
         finance_interest_rate: form.financeRate.trim() === "" ? null : Number(form.financeRate),
         seating_capacity: seatingCapacity,
-        lat,
-        lng,
+        ...(sendLocation
+          ? {
+              city: location.city,
+              state: location.state,
+              address: location.address,
+              lat: location.lat,
+              lng: location.lng,
+            }
+          : {}),
         images,
       };
       const res = await fetch(editing ? `/api/vehicles/${v!.id}` : "/api/vehicles", {
@@ -186,10 +218,6 @@ export function CarForm({ initial }: CarFormProps) {
               Positive whole number only, jaise 5, 7, 13 ya 15.
             </p>
           </div>
-          <div>
-            <Label htmlFor="city">City</Label>
-            <Input id="city" value={form.city} onChange={set("city")} placeholder="Jaipur" />
-          </div>
           {(() => {
             const priceNum = Number(form.price);
             const downNum = form.downPayment.trim() === "" ? null : Number(form.downPayment);
@@ -227,21 +255,122 @@ export function CarForm({ initial }: CarFormProps) {
       </Card>
 
       <Card className="p-5">
-        <h2 className="font-semibold text-stone-900">Location</h2>
-        <p className="mt-1 text-xs text-stone-400">Gaadi kahan hai? Map pe pin karo — customers ko distance milegi.</p>
-        <div className="mt-4">
-          <LocationPicker
-            lat={lat}
-            lng={lng}
-            label={locationLabel}
-            onChange={(loc: PickedLocation) => {
-              setLat(loc.lat);
-              setLng(loc.lng);
-              setLocationLabel(loc.label);
-              setForm((f) => ({ ...f, city: loc.city || f.city }));
-            }}
-          />
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-stone-900">📍 Location</h2>
+            {!customLocation && dealerHasLocation && (
+              <p className="mt-1 text-xs text-stone-400">
+                Aapki dealership ki location apni aap lag gayi hai.
+              </p>
+            )}
+          </div>
+          {customLocation && (
+            <span className="shrink-0 rounded-full bg-brand/10 px-2.5 py-1 text-[11px] font-semibold text-brand">
+              Is gaadi ke liye custom
+            </span>
+          )}
         </div>
+
+        {!customLocation && dealerHasLocation ? (
+          <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <p className="flex items-start gap-2 text-sm font-semibold text-stone-900">
+              <span aria-hidden>📍</span>
+              <span className="min-w-0 break-words">
+                {locationText(location) || location.address || "Location set nahi hai"}
+              </span>
+            </p>
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+              <span aria-hidden>✓</span> Using dealer office location
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setCustomLocation(true)}>
+                Change for this car
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {customLocation && dealerHasLocation && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+                <p className="text-xs text-stone-500">
+                  Sirf is gaadi ke liye — dealer profile ka office location nahi badlega.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setLocation(dealerLoc);
+                    setCustomLocation(false);
+                  }}
+                >
+                  Dealer location use karo
+                </Button>
+              </div>
+            )}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={location.city}
+                  onChange={(e) => setLocation((l) => ({ ...l, city: e.target.value }))}
+                  placeholder="Pilani"
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  value={location.state}
+                  onChange={(e) => setLocation((l) => ({ ...l, state: e.target.value }))}
+                  placeholder="Rajasthan"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={location.address}
+                  onChange={(e) => setLocation((l) => ({ ...l, address: e.target.value }))}
+                  placeholder="Shop 12, Main Market"
+                />
+              </div>
+            </div>
+
+            <LocationPicker
+              compact
+              lat={location.lat}
+              lng={location.lng}
+              label={locationText(location)}
+              onChange={(loc: PickedLocation) =>
+                setLocation((l) => ({
+                  ...l,
+                  lat: loc.lat,
+                  lng: loc.lng,
+                  city: loc.city || l.city,
+                  // A dragged pin has no typed address; fall back to the
+                  // geocoder's label only while the field is still empty.
+                  address: l.address.trim() || loc.label || l.address,
+                }))
+              }
+            />
+
+            {dealerHasLocation && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setCustomLocation(false)}>
+                ← Dealer location par wapas jao
+              </Button>
+            )}
+          </div>
+        )}
+
+        {!dealerHasLocation && !customLocation && (
+          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Pehle apni dealer profile mein 📍 Office Location save karo — wahi har nayi gaadi ka
+            default banegi.
+          </p>
+        )}
       </Card>
 
       <FieldError message={error} />
